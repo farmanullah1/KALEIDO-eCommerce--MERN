@@ -17,20 +17,36 @@ export const getAdminStats = asyncHandler(async (req: Request, res: Response) =>
   const orders = await Order.find();
   const totalRevenue = orders.reduce((acc, order) => acc + (order.total || 0), 0);
 
+  const revenueByMonth = await Order.aggregate([
+    {
+      $group: {
+        _id: { $month: "$createdAt" },
+        revenue: { $sum: "$total" }
+      }
+    },
+    { $sort: { "_id": 1 } }
+  ]);
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const revenueData = revenueByMonth.map(item => ({
+    name: monthNames[item._id - 1],
+    revenue: item.revenue
+  }));
+
+  // Fallback for empty data
+  const finalRevenueData = revenueData.length > 0 ? revenueData : [
+    { name: 'Jan', revenue: 0 },
+    { name: 'Feb', revenue: 0 },
+    { name: 'Mar', revenue: 0 },
+  ];
+
   res.json(successResponse({
     totalUsers,
     totalSellers,
     totalProducts,
     pendingProducts,
     totalRevenue,
-    revenueData: [
-      { name: 'Jan', revenue: 4000 },
-      { name: 'Feb', revenue: 3000 },
-      { name: 'Mar', revenue: 5000 },
-      { name: 'Apr', revenue: 4500 },
-      { name: 'May', revenue: 6000 },
-      { name: 'Jun', revenue: 7000 },
-    ]
+    revenueData: finalRevenueData
   }));
 });
 

@@ -10,52 +10,64 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 export const getSellerStats = asyncHandler(async (req: Request, res: Response) => {
   const sellerId = req.user._id;
 
-  // 1. Total Earnings (Sum of delivered orders containing seller's products)
-  const orders = await Order.find({
-    'items.product': { $in: await Product.find({ sellerId }).distinct('_id') },
-    status: 'delivered'
-  });
+  const sellerOrders = await Order.find({
+    'items.sellerId': sellerId
+  }).sort({ createdAt: -1 });
 
   let totalEarnings = 0;
-  orders.forEach(order => {
-    order.items.forEach(item => {
-      // Find matching items from this seller
-      // (This is a simplified calculation, in reality we'd need to link items to sellers better)
-      // For now we assume items in order have a product ref we can check
-    });
-    // For simplicity in this mock-ready stage, let's just sum relevant item prices
+  sellerOrders.forEach(order => {
+    if (order.status === 'delivered') {
+      order.items.forEach(item => {
+        if (item.sellerId.toString() === sellerId.toString()) {
+          totalEarnings += item.price * item.quantity;
+        }
+      });
+    }
   });
-
-  // Simplified calculation for demo purposes:
-  const sellerProducts = await Product.find({ sellerId }).distinct('_id');
-  const relevantOrders = await Order.find({
-    'items.product': { $in: sellerProducts }
-  }).sort({ createdAt: -1 }).limit(10);
-
-  // Mocking lifetime earnings for visual polish
-  totalEarnings = 12450.75; 
 
   // 2. Product Stats
   const activeProducts = await Product.countDocuments({ sellerId, moderationStatus: 'active' });
   const pendingProducts = await Product.countDocuments({ sellerId, moderationStatus: 'pending' });
 
-  // 3. Recent Orders (Orders containing seller's products)
-  const recentOrders = relevantOrders;
+  // 4. Sales Data (Last 7 days)
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const weeklyOrders = await Order.find({
+    'items.sellerId': sellerId,
+    createdAt: { $gte: sevenDaysAgo }
+  });
+
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const salesMap: any = {};
+  
+  // Initialize map
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    salesMap[days[d.getDay()]] = 0;
+  }
+
+  weeklyOrders.forEach(order => {
+    const day = days[new Date(order.createdAt).getDay()];
+    order.items.forEach(item => {
+      if (item.sellerId.toString() === sellerId.toString()) {
+        salesMap[day] += item.price * item.quantity;
+      }
+    });
+  });
+
+  const salesData = Object.keys(salesMap).map(day => ({
+    name: day,
+    sales: salesMap[day]
+  })).reverse();
 
   res.json(successResponse({
     totalEarnings,
     activeProducts,
     pendingProducts,
     recentOrders,
-    storeHealth: 'Excellent',
-    salesData: [
-      { name: 'Mon', sales: 400 },
-      { name: 'Tue', sales: 300 },
-      { name: 'Wed', sales: 600 },
-      { name: 'Thu', sales: 800 },
-      { name: 'Fri', sales: 500 },
-      { name: 'Sat', sales: 900 },
-      { name: 'Sun', sales: 1100 },
-    ]
+    storeHealth: totalEarnings > 1000 ? 'Celestial' : 'Optimal',
+    salesData
   }));
 });

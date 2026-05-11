@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore.js';
 import { upgradeToSeller } from '../api/auth.api.js';
 import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
+import { useCartStore } from '../store/cartStore.js';
 import HamburgerIcon from './HamburgerIcon.js';
 
 const Navbar = () => {
@@ -12,6 +13,13 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { cart, fetchCart } = useCartStore();
+
+  useEffect(() => {
+    if (isAuthenticated) fetchCart();
+  }, [isAuthenticated]);
+
+  const cartCount = cart?.items.reduce((acc: number, item: any) => acc + item.quantity, 0) || 0;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -73,7 +81,11 @@ const Navbar = () => {
 
           <Link to="/cart" className="relative group" onClick={() => setIsMenuOpen(false)} title="Cart">
             <ShoppingCart className="w-6 h-6 text-white/70 group-hover:text-primary transition-colors" />
-            <span className="absolute -top-2 -right-2 w-5 h-5 bg-secondary text-background text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-background">0</span>
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 w-5 h-5 bg-secondary text-background text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-background">
+                {cartCount}
+              </span>
+            )}
           </Link>
 
           <div className="hidden md:flex items-center gap-6">

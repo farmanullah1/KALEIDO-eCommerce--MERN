@@ -16,13 +16,16 @@ import SellerOrders from './pages/seller/Orders.js';
 import AdminDashboard from './pages/admin/Dashboard.js';
 import ModerationQueue from './pages/admin/ModerationQueue.js';
 import Wishlist from './pages/Wishlist.js';
+import Profile from './pages/Profile.js';
 import { useAuthStore } from './store/authStore.js';
 import ProtectedRoute from './components/ProtectedRoute.js';
 import Navbar from './components/Navbar.js';
+import Footer from './components/Footer.js';
 import BackgroundEffect from './components/BackgroundEffect.js';
 import CursorTracker from './components/CursorTracker.js';
 import PageWrapper from './components/PageWrapper.js';
 import { useSocket } from './hooks/useSocket.js';
+import NeuralLink from './components/NeuralLink.js';
 
 
 const AnimatedRoutes = () => {
@@ -50,6 +53,7 @@ const AnimatedRoutes = () => {
 
         <Route path="/search" element={<PageWrapper><Search /></PageWrapper>} />
         <Route path="/wishlist" element={<ProtectedRoute><PageWrapper><Wishlist /></PageWrapper></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><PageWrapper><Profile /></PageWrapper></ProtectedRoute>} />
         <Route path="*" element={<PageWrapper><NotFound /></PageWrapper>} />
       </Routes>
     </AnimatePresence>
@@ -75,7 +79,9 @@ function App() {
         }}
       />
       <div className="noise-overlay" />
+      <NeuralLink />
       <AnimatedRoutes />
+      <Footer />
     </Router>
   );
 }

@@ -16,6 +16,14 @@ const ProductReviews = ({ productId, reviews, onReviewAdded }: ProductReviewsPro
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'rating'>('newest');
+
+  const sortedReviews = [...reviews].sort((a, b) => {
+    if (sortBy === 'newest') {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    return b.rating - a.rating;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,11 +48,33 @@ const ProductReviews = ({ productId, reviews, onReviewAdded }: ProductReviewsPro
 
   return (
     <div className="mt-20">
-      <div className="flex items-center gap-4 mb-10">
-        <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center">
-          <MessageSquare size={24} className="text-primary" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center">
+            <MessageSquare size={24} className="text-primary" />
+          </div>
+          <h2 className="text-3xl font-bold uppercase tracking-tighter">System Feedback</h2>
         </div>
-        <h2 className="text-3xl font-bold uppercase tracking-tighter">System Feedback</h2>
+        
+        {/* Sort Controls */}
+        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/10 self-start md:self-auto">
+          <button 
+            onClick={() => setSortBy('newest')}
+            className={`px-4 py-2 rounded-lg text-[10px] font-mono uppercase tracking-widest transition-all ${
+              sortBy === 'newest' ? 'bg-primary/20 text-primary' : 'text-white/40 hover:text-white/60'
+            }`}
+          >
+            Newest
+          </button>
+          <button 
+            onClick={() => setSortBy('rating')}
+            className={`px-4 py-2 rounded-lg text-[10px] font-mono uppercase tracking-widest transition-all ${
+              sortBy === 'rating' ? 'bg-primary/20 text-primary' : 'text-white/40 hover:text-white/60'
+            }`}
+          >
+            Highest Rating
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -111,8 +141,8 @@ const ProductReviews = ({ productId, reviews, onReviewAdded }: ProductReviewsPro
 
         {/* Reviews List */}
         <div className="space-y-6">
-          {reviews.length > 0 ? (
-            reviews.map((review, i) => (
+          {sortedReviews.length > 0 ? (
+            sortedReviews.map((review, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}

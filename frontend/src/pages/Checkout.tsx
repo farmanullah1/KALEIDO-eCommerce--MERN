@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { Checkmark } from '../components/UIPolish.js';
 import { Confetti } from '../components/Confetti.js';
+import { useCartStore } from '../store/cartStore.js';
 
 const Checkout = () => {
   const [step, setStep] = useState(1);
@@ -21,6 +22,7 @@ const Checkout = () => {
     cvv: ''
   });
   const navigate = useNavigate();
+  const clearCart = useCartStore(state => state.clearCart);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -31,6 +33,7 @@ const Checkout = () => {
       const shippingAddress = `${formData.address}, ${formData.city}, ${formData.zip}, ${formData.country}`;
       const { data } = await api.post('/orders', { shippingAddress });
       setOrder(data.data);
+      clearCart();
       toast.success('Order Anchored Successfully!');
       setStep(3);
     } catch (error) {

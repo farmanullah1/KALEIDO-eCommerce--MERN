@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck } from 'lucide-react';
-import api from '../api/axios.js';
-import toast from 'react-hot-toast';
+import { useCartStore } from '../store/cartStore.js';
 import { LoadingSpinner } from '../components/UIPolish.js';
 
 const CartItem = ({ item, onUpdate, onRemove }: { item: any, onUpdate: any, onRemove: any }) => {
@@ -68,78 +67,19 @@ const CartItem = ({ item, onUpdate, onRemove }: { item: any, onUpdate: any, onRe
 };
 
 const Cart = () => {
-  const [cart, setCart] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { cart, isLoading, fetchCart, updateQuantity, removeItem, applyPromo } = useCartStore();
   const [promoCode, setPromoCode] = useState('');
-
-  const fetchCart = async () => {
-    try {
-      const { data } = await api.get('/cart');
-      setCart(data.data);
-    } catch (error) {
-      console.error('Failed to fetch cart');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCart();
   }, []);
 
-  const updateQuantity = async (itemId: string, quantity: number) => {
-    if (quantity < 1) return;
-    
-    // Optimistic update
-    setCart((prev: any) => ({
-      ...prev,
-      items: prev.items.map((item: any) => 
-        item._id === itemId ? { ...item, quantity } : item
-      )
-    }));
-
-    // Debounce API call
-    if (updating) clearTimeout(Number(updating));
-    const timer = setTimeout(async () => {
-      try {
-        await api.put(`/cart/${itemId}`, { quantity });
-        // Don't fetchCart here to avoid jumping UI if another update is pending
-      } catch (error) {
-        toast.error('Failed to update quantity');
-        fetchCart(); // Revert on error
-      }
-    }, 300);
-    setUpdating(timer.toString());
-  };
-
-  const removeItem = async (itemId: string) => {
-    try {
-      await api.delete(`/cart/${itemId}`);
-      toast.success('Artifact removed from collection');
-      fetchCart();
-    } catch (error) {
-      toast.error('Failed to remove artifact');
-    }
-  };
-
-  const applyPromo = async () => {
-    try {
-      await api.post('/cart/promo', { code: promoCode });
-      toast.success('Promo ritual successful');
-      fetchCart();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Invalid promo code');
-    }
-  };
-
   const subtotal = cart?.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0) || 0;
   const discount = (subtotal * (cart?.discountPct || 0)) / 100;
-  const shipping = subtotal > 50 ? 0 : 4.99;
+  const shipping = subtotal > 50 || subtotal === 0 ? 0 : 4.99;
   const total = subtotal - discount + shipping;
 
-  if (loading) return (
+  if (isLoading && !cart) return (
     <div className="min-h-screen flex items-center justify-center">
       <LoadingSpinner />
     </div>
@@ -152,7 +92,7 @@ const Cart = () => {
       </div>
       <h2 className="text-4xl font-black mb-4">CART IS EMPTY</h2>
       <p className="text-white/40 mb-12 max-w-md">Your collection is currently manifesting. Explore the dimension to find artifacts.</p>
-      <Link to="/" className="btn-primary px-12 py-4">Return to Dimension</Link>
+      <Link to="/search" className="btn-primary px-12 py-4">Explore Dimension</Link>
     </div>
   );
 
@@ -211,7 +151,7 @@ const Cart = () => {
                   placeholder="PROMO CODE"
                   className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
-                <button onClick={applyPromo} className="px-4 py-2 bg-white/10 rounded-lg text-sm font-bold hover:bg-white/20 transition-colors">APPLY</button>
+                <button onClick={() => applyPromo(promoCode)} className="px-4 py-2 bg-white/10 rounded-lg text-sm font-bold hover:bg-white/20 transition-colors">APPLY</button>
               </div>
 
               <Link to="/checkout" className="btn-primary w-full py-4 flex items-center justify-center gap-3">

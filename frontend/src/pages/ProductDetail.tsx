@@ -8,6 +8,10 @@ import { LoadingSpinner, WishlistButton } from '../components/UIPolish.js';
 import ProductReviews from '../components/ProductReviews.js';
 import HologramPreview from '../components/HologramPreview.js';
 import { Box as BoxIcon, Image as ImageIcon } from 'lucide-react';
+import { useCartStore } from '../store/cartStore.js';
+import { PurchaseVelocity } from '../components/PurchaseVelocity.js';
+import ProductCard from '../components/ProductCard.js';
+import SEO from '../components/SEO.js';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -16,6 +20,9 @@ const ProductDetail = () => {
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [view3D, setView3D] = useState(false);
+  const { addToCart } = useCartStore();
+  const [similarProducts, setSimilarProducts] = useState([]);
+
   useEffect(() => {
     fetchProduct();
     window.scrollTo(0, 0);
@@ -25,6 +32,10 @@ const ProductDetail = () => {
     try {
       const { data } = await api.get(`/products/${id}`);
       setProduct(data.data);
+      
+      // Fetch similar products
+      const similarRes = await api.get(`/products?category=${data.data.category}&limit=4`);
+      setSimilarProducts(similarRes.data.data.products.filter((p: any) => p._id !== id));
     } catch (error) {
       toast.error('Failed to stabilize artifact data.');
     } finally {
@@ -32,8 +43,8 @@ const ProductDetail = () => {
     }
   };
 
-  const handleAddToCart = () => {
-    toast.success(`${product?.name} added to collection!`);
+  const handleAddToCart = async () => {
+    await addToCart(product._id, quantity);
   };
 
   if (loading) return (
@@ -50,7 +61,8 @@ const ProductDetail = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background pt-32 pb-20">
+    <div className="min-h-screen bg-background pt-24 pb-20">
+      <SEO title={product?.name || 'Artifact Detail'} description={product?.description} />
       <div className="container mx-auto px-6">
         <Link to="/" className="inline-flex items-center gap-2 text-white/50 hover:text-primary transition-colors mb-12 group">
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -149,6 +161,7 @@ const ProductDetail = () => {
                 <p className="text-xl text-white/60 leading-relaxed">
                   {product.description}
                 </p>
+                <PurchaseVelocity />
               </div>
 
               {/* Action Controls */}
@@ -201,6 +214,18 @@ const ProductDetail = () => {
           reviews={product.reviews || []} 
           onReviewAdded={fetchProduct} 
         />
+
+        {/* Similar Artifacts */}
+        {similarProducts.length > 0 && (
+          <div className="mt-32">
+            <h2 className="text-3xl font-black uppercase tracking-tighter mb-12">Linked Dimensions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {similarProducts.map((p: any, i: number) => (
+                <ProductCard key={p._id} product={p} index={i} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

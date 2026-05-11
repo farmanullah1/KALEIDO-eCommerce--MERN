@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Plus, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { WishlistButton } from './UIPolish';
+import { WishlistButton } from './UIPolish.js';
+import { useCartStore } from '../store/cartStore.js';
 import { VolumetricRipple, CartOrbFly } from './AddToCartEffects';
 import TiltCard from './TiltCard';
 import { fadeUp } from '../lib/animations';
@@ -17,7 +18,9 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
   const [rippleActive, setRippleActive] = useState(false);
   const [flyOrb, setFlyOrb] = useState<{ x: number, y: number } | null>(null);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const addToCart = useCartStore(state => state.addToCart);
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -27,7 +30,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
     
     setFlyOrb({ x: e.clientX, y: e.clientY });
     
-    toast.success(`${product.name} added to cart!`);
+    await addToCart(product._id);
   };
 
   return (

@@ -1,26 +1,26 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../store/authStore.js';
 import toast from 'react-hot-toast';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 export const useSocket = () => {
   const { user, isAuthenticated } = useAuthStore();
-  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      socketRef.current = io(SOCKET_URL, {
+      const socketInstance = io(SOCKET_URL, {
         withCredentials: true,
       });
 
-      socketRef.current.on('connect', () => {
+      socketInstance.on('connect', () => {
         console.log('🔌 Connected to websocket');
-        socketRef.current?.emit('join-room', user._id);
+        socketInstance.emit('join-room', user._id);
       });
 
-      socketRef.current.on('notification', (data) => {
+      socketInstance.on('notification', (data) => {
         console.log('🔔 Notification received:', data);
         toast.custom((t) => (
           <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} glass-card p-4 max-w-md w-full flex gap-4 border-l-4 border-primary`}>
@@ -35,11 +35,13 @@ export const useSocket = () => {
         ), { duration: 5000 });
       });
 
+      setSocket(socketInstance);
+
       return () => {
-        socketRef.current?.disconnect();
+        socketInstance.disconnect();
       };
     }
   }, [isAuthenticated, user]);
 
-  return socketRef.current;
+  return socket;
 };
