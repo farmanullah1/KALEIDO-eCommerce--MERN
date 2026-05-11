@@ -4,6 +4,7 @@ export interface IOrder extends Document {
   user: Schema.Types.ObjectId;
   items: {
     product: Schema.Types.ObjectId;
+    sellerId: Schema.Types.ObjectId;
     name: string;
     image: string;
     price: number;
@@ -35,6 +36,7 @@ const orderSchema = new Schema<IOrder>({
   user:     { type: Schema.Types.ObjectId, ref: 'User' },
   items:    [{
     product:  { type: Schema.Types.ObjectId, ref: 'Product' },
+    sellerId: { type: Schema.Types.ObjectId, ref: 'User' },
     name:     String,
     image:    String,
     price:    Number,

@@ -4,7 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, ArrowLeft, Star, Shield, Zap, RefreshCcw, Plus, Minus } from 'lucide-react';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
-import { LoadingSpinner } from '../components/UIPolish.js';
+import { LoadingSpinner, WishlistButton } from '../components/UIPolish.js';
+import ProductReviews from '../components/ProductReviews.js';
+import HologramPreview from '../components/HologramPreview.js';
+import { Box as BoxIcon, Image as ImageIcon } from 'lucide-react';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -12,21 +15,26 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-
+  const [view3D, setView3D] = useState(false);
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const { data } = await api.get(`/products/${id}`);
-        setProduct(data.data);
-      } catch (error) {
-        toast.error('Failed to stabilize artifact data.');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProduct();
     window.scrollTo(0, 0);
   }, [id]);
+
+  const fetchProduct = async () => {
+    try {
+      const { data } = await api.get(`/products/${id}`);
+      setProduct(data.data);
+    } catch (error) {
+      toast.error('Failed to stabilize artifact data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddToCart = () => {
+    toast.success(`${product?.name} added to collection!`);
+  };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -55,23 +63,56 @@ const ProductDetail = () => {
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="glass-card aspect-square overflow-hidden relative"
+              onMouseMove={(e) => {
+                const { currentTarget, clientX, clientY } = e;
+                const { left, top, width, height } = currentTarget.getBoundingClientRect();
+                const x = ((clientX - left) / width - 0.5) * 20;
+                const y = ((clientY - top) / height - 0.5) * 20;
+                const img = currentTarget.querySelector('img');
+                if (img) img.style.transform = `scale(1.1) translate(${x}px, ${y}px)`;
+              }}
+              onMouseLeave={(e) => {
+                const img = e.currentTarget.querySelector('img');
+                if (img) img.style.transform = `scale(1) translate(0px, 0px)`;
+              }}
+              className="glass-card aspect-square overflow-hidden relative cursor-crosshair"
             >
               <AnimatePresence mode="wait">
-                <motion.img
-                  key={activeImage}
-                  src={product.images[activeImage]}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="w-full h-full object-cover"
-                />
+                {view3D ? (
+                  <motion.div
+                    key="3d"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="w-full h-full bg-black"
+                  >
+                    <HologramPreview imageUrl={product.images[activeImage]} />
+                  </motion.div>
+                ) : (
+                  <motion.img
+                    key="2d"
+                    src={product.images[activeImage]}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="w-full h-full object-cover transition-transform duration-300 ease-out pointer-events-none"
+                  />
+                )}
               </AnimatePresence>
               
               {/* Product Badge */}
-              <div className="absolute top-6 left-6 px-4 py-1 bg-primary text-background font-bold rounded-full text-xs tracking-tighter">
+              <div className="absolute top-6 left-6 px-4 py-1 bg-primary text-background font-bold rounded-full text-xs tracking-tighter z-20">
                 {product.category.toUpperCase()}
               </div>
+
+              {/* View Toggle */}
+              <button 
+                onClick={() => setView3D(!view3D)}
+                className="absolute bottom-6 right-6 p-3 glass-card rounded-xl text-primary hover:scale-110 transition-all z-20"
+                title={view3D ? "Switch to 2D View" : "Switch to 3D Hologram"}
+              >
+                {view3D ? <ImageIcon size={20} /> : <BoxIcon size={20} />}
+              </button>
             </motion.div>
 
             <div className="grid grid-cols-4 gap-4">
@@ -129,13 +170,13 @@ const ProductDetail = () => {
                 </div>
 
                 <button 
-                  onClick={() => toast.success('Artifact added to collection')}
-                  className="btn-primary flex-1 py-4 flex items-center justify-center gap-3 text-lg"
-                  aria-label="Add artifact to collection"
+                  onClick={handleAddToCart}
+                  className="btn-primary flex-1 py-4 text-lg font-bold flex items-center justify-center gap-3 group relative overflow-hidden"
                 >
-                  <ShoppingCart className="w-6 h-6" />
-                  ADD TO CART
+                  <ShoppingCart className="w-6 h-6" /> ADD TO DIMENSION
                 </button>
+
+                <WishlistButton productId={product._id} className="p-4 glass-card rounded-xl" />
               </div>
 
               {/* Trust Badges */}
@@ -154,6 +195,12 @@ const ProductDetail = () => {
             </motion.div>
           </div>
         </div>
+
+        <ProductReviews 
+          productId={product._id} 
+          reviews={product.reviews || []} 
+          onReviewAdded={fetchProduct} 
+        />
       </div>
     </div>
   );

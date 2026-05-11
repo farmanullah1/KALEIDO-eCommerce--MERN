@@ -16,7 +16,7 @@ export interface IUser extends Document {
     country: string;
     isDefault: boolean;
   }[];
-  role: 'user' | 'admin';
+  role: 'user' | 'seller' | 'admin';
   refreshToken?: string;
   createdAt: Date;
 }
@@ -37,7 +37,7 @@ const userSchema = new Schema<IUser>({
     country:    { type: String, default: 'PK' },
     isDefault:  { type: Boolean, default: false }
   }],
-  role:          { type: String, enum: ['user', 'admin'], default: 'user' },
+  role:          { type: String, enum: ['user', 'seller', 'admin'], default: 'user' },
   refreshToken:  { type: String },
   createdAt:     { type: Date, default: Date.now }
 });

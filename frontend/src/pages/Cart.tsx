@@ -7,13 +7,31 @@ import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/UIPolish.js';
 
 const CartItem = ({ item, onUpdate, onRemove }: { item: any, onUpdate: any, onRemove: any }) => {
+  const [isShaking, setIsShaking] = useState(false);
+
+  useEffect(() => {
+    setIsShaking(true);
+    const timer = setTimeout(() => setIsShaking(false), 500);
+    return () => clearTimeout(timer);
+  }, [item.quantity]);
+
   return (
     <motion.div 
       layout
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      className="glass-card p-6 flex flex-col sm:flex-row items-center gap-6 mb-4"
+      initial={{ opacity: 0, x: -20, rotateY: -30 }}
+      animate={{ 
+        opacity: 1, 
+        x: isShaking ? [0, -4, 4, -4, 4, 0] : 0,
+        rotateY: 0
+      }}
+      transition={{ duration: 0.4 }}
+      exit={{ 
+        opacity: 0, 
+        scale: 0.5, 
+        rotateY: 90,
+        transition: { duration: 0.3 }
+      }}
+      className="glass-card p-6 flex flex-col sm:flex-row items-center gap-6 mb-4 perspective-1000 preserve-3d"
     >
       <div className="w-24 h-24 rounded-xl overflow-hidden bg-white/5 flex-shrink-0">
         <img src={item.product.images[0]} className="w-full h-full object-cover" />
@@ -29,7 +47,14 @@ const CartItem = ({ item, onUpdate, onRemove }: { item: any, onUpdate: any, onRe
         <button onClick={() => onUpdate(item._id, item.quantity - 1)} className="p-1 hover:text-primary transition-colors" aria-label="Decrease quantity">
           <Minus className="w-4 h-4" />
         </button>
-        <span className="font-mono font-bold w-6 text-center">{item.quantity}</span>
+        <motion.span 
+          key={item.quantity}
+          initial={{ scale: 1.5, color: '#00F5FF' }}
+          animate={{ scale: 1, color: '#FFFFFF' }}
+          className="font-mono font-bold w-6 text-center"
+        >
+          {item.quantity}
+        </motion.span>
         <button onClick={() => onUpdate(item._id, item.quantity + 1)} className="p-1 hover:text-primary transition-colors" aria-label="Increase quantity">
           <Plus className="w-4 h-4" />
         </button>
@@ -58,18 +83,35 @@ const Cart = () => {
     }
   };
 
+  const [updating, setUpdating] = useState<string | null>(null);
+
   useEffect(() => {
     fetchCart();
   }, []);
 
   const updateQuantity = async (itemId: string, quantity: number) => {
     if (quantity < 1) return;
-    try {
-      await api.put(`/cart/${itemId}`, { quantity });
-      fetchCart();
-    } catch (error) {
-      toast.error('Failed to update quantity');
-    }
+    
+    // Optimistic update
+    setCart((prev: any) => ({
+      ...prev,
+      items: prev.items.map((item: any) => 
+        item._id === itemId ? { ...item, quantity } : item
+      )
+    }));
+
+    // Debounce API call
+    if (updating) clearTimeout(Number(updating));
+    const timer = setTimeout(async () => {
+      try {
+        await api.put(`/cart/${itemId}`, { quantity });
+        // Don't fetchCart here to avoid jumping UI if another update is pending
+      } catch (error) {
+        toast.error('Failed to update quantity');
+        fetchCart(); // Revert on error
+      }
+    }, 300);
+    setUpdating(timer.toString());
   };
 
   const removeItem = async (itemId: string) => {

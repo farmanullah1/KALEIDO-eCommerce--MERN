@@ -1405,3 +1405,80 @@ Last updated: {timestamp}
 8. **Checkout is protected** — unauthenticated users hitting `/checkout` get redirected to `/login?redirect=/checkout` with a toast explaining why.
 9. **All forms use React Hook Form + Zod** for validation — no manual `useState` form management.
 10. **Update `progress.md` after every phase** with a timestamp and a one-line status note.
+
+---
+
+## 18. EXPANSION SPECIFICATIONS (MULTI-VENDOR & ADVANCED FEATURES)
+
+### 18.1 Phase 8: Seller & Admin Ecosystem
+
+**Seller Portal:**
+- **Dashboard:** Glassmorphic layout with 3D-effect cards showing "Lifetime Earnings" (with a floating coin animation), "Recent Orders" (staggered list), and "Store Health".
+- **Inventory Control:** A table with a "Cyberpunk" aesthetic. Products have statuses: `Draft`, `Pending Approval`, `Active`, `Rejected`.
+- **Order Management:** Sellers can update order status: `Processing`, `Shipped`, `Delivered`. Each status change triggers a 3D "Stamp" animation.
+
+**Admin Panel:**
+- **System Overview:** Global stats using glowing line charts.
+- **Moderation Queue:** Admins approve or reject new products from sellers. Rejection requires a reason, which is sent to the seller.
+- **User Management:** Ability to promote users to `seller` or `admin`, or ban/suspend accounts.
+
+**Backend RBAC:**
+- `checkRole(['seller', 'admin'])` middleware for protected routes.
+- `Product` model updated with `sellerId` and `moderationStatus`.
+
+### 18.2 Phase 9: Marketplace Features (Advanced)
+
+**Product Reviews & Social Proof:**
+- **Review System:** Users who purchased a product can leave a review. Reviews include a "Verified Purchase" badge that glows.
+- **Star Ratings:** 3D animated stars that "fill up" based on the average rating.
+- **Social Sharing:** "Share to 3rd Dimension" button that generates a high-quality product preview card for social media.
+
+**Advanced Search & Discovery:**
+- **Search-as-you-type:** Results appear in a glassmorphic overlay with thumbnails and prices.
+- **Category Tree:** Deep-nested categories with a "Drill-down" animation.
+- **Wishlist Sync:** Wishlist is saved to the database. When a wishlist item goes on sale, the user gets a "Neon Notification".
+
+**Real-time Interaction:**
+- **Socket.io Integration:** 
+  - "Someone just bought this!" toast notifications.
+  - Live order tracking updates.
+  - Seller chat (optional/deferred).
+
+### 18.3 Phase 10: Immersive Visualizations & 3D Polish
+
+**3D Product Exploration:**
+- **GLB/GLTF Viewer:** Use `@google/model-viewer` for high-fidelity 3D exploration.
+- **3D Exploded View:** (For electronics) Clicking "Details" triggers a 3D animation where the product parts separate.
+
+**Interactive Analytics:**
+- **Revenue Charts:** Recharts with custom `linearGradient` fills matching the Kaleido color palette.
+- **Traffic Heatmap:** A 3D globe visualization (Three.js) showing where orders are coming from.
+
+**Final Polish:**
+- **Advanced Shaders:** Custom noise and chromatic aberration effects on the hero canvas.
+- **Deployment Ready:** CI/CD pipeline setup for production stability.
+
+---
+
+## 19. REVISED PROGRESS TRACKING
+
+### Phase 8: Seller & Admin Ecosystem
+- [x] Role-based access control (RBAC) implementation
+- [x] Seller Registration & Onboarding flow
+- [x] Seller Dashboard (Analytics, Sales charts, Recent orders)
+- [x] Inventory Management (CRUD for products with status)
+- [x] Admin Control Center (Moderation, User management, System stats)
+- [x] Seller-specific order fulfillment workflow
+
+### Phase 9: Marketplace Features (Advanced)
+- [x] Product Reviews (Rich text + Star ratings)
+- [x] Advanced Search (Search-as-you-type, Category filtering)
+- [x] Wishlist Persistence (Syncing with DB)
+- [x] Real-time Order Status Notifications (Socket.io)
+- [x] Coupon & Voucher System
+
+### Phase 10: Immersive Visualizations & 3D Polish
+- [ ] 3D GLB/GLTF Model Viewer integration
+- [ ] Interactive Data Charts (Earnings & Traffic)
+- [ ] 3D "Supply Chain" Tracking Animation
+- [ ] Advanced Glassmorphism Shaders for Dashboards

@@ -5,76 +5,12 @@ import { Scene } from '../components/PortalCarousel.js';
 import api from '../api/axios.js';
 import { ShoppingCart, Compass, Zap, Box, Plus, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { LoadingSpinner, Skeleton } from '../components/UIPolish.js';
+import { LoadingSpinner, Skeleton, WishlistButton } from '../components/UIPolish.js';
 import { VolumetricRipple, CartOrbFly } from '../components/AddToCartEffects.js';
 import TiltCard from '../components/TiltCard.js';
+import { fadeUp, staggerContainer } from '../lib/animations.js';
 
-const ProductCard = ({ product }: { product: any }) => {
-  const [rippleActive, setRippleActive] = useState(false);
-  const [flyOrb, setFlyOrb] = useState<{ x: number, y: number } | null>(null);
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Trigger effects
-    setRippleActive(true);
-    setTimeout(() => setRippleActive(false), 600);
-    
-    setFlyOrb({ x: e.clientX, y: e.clientY });
-    
-    toast.success(`${product.name} added to cart!`);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      className="relative"
-    >
-      <TiltCard className="glass-card group overflow-hidden">
-        {flyOrb && <CartOrbFly startPos={flyOrb} onComplete={() => setFlyOrb(null)} />}
-        
-        <Link to={`/products/${product._id}`}>
-          <div className="relative aspect-square overflow-hidden bg-white/5">
-            <img 
-              src={product.images[0]} 
-              alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-              <button 
-                className="btn-primary w-full py-2 text-sm flex items-center justify-center gap-2 relative overflow-hidden"
-                onClick={handleAddToCart}
-                aria-label={`Add ${product.name} to cart`}
-              >
-                <VolumetricRipple active={rippleActive} />
-                <Plus className="w-4 h-4" /> ADD TO CART
-              </button>
-            </div>
-          </div>
-        </Link>
-        <div className="p-5">
-          <div className="flex justify-between items-start mb-2">
-            <Link to={`/products/${product._id}`}>
-              <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
-                {product.name}
-              </h3>
-            </Link>
-            <span className="font-mono text-secondary font-bold">${product.price}</span>
-          </div>
-          <div className="flex items-center gap-1 mb-3">
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-            <span className="text-sm text-white/60">{product.rating.average}</span>
-          </div>
-          <p className="text-sm text-white/40 line-clamp-2 mb-4">
-            {product.description}
-          </p>
-        </div>
-      </TiltCard>
-    </motion.div>
-  );
-};
+import ProductCard from '../components/ProductCard.js';
 
 const Home = () => {
   const [products, setProducts] = useState([]);
@@ -137,9 +73,9 @@ const Home = () => {
             <h2 className="text-4xl font-bold mb-2">CURATED ARTIFACTS</h2>
             <div className="w-20 h-1 bg-primary rounded-full" />
           </div>
-          <button className="text-white/60 hover:text-primary transition-colors font-mono uppercase tracking-widest text-sm flex items-center gap-2">
+          <Link to="/search" className="text-white/60 hover:text-primary transition-colors font-mono uppercase tracking-widest text-sm flex items-center gap-2">
             View All <Compass className="w-4 h-4" />
-          </button>
+          </Link>
         </div>
 
         {loading ? (
@@ -149,11 +85,17 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {products.map((product: any) => (
-              <ProductCard key={product._id} product={product} />
+          <motion.div 
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+          >
+            {products.map((product: any, index: number) => (
+              <ProductCard key={product._id} product={product} index={index} />
             ))}
-          </div>
+          </motion.div>
         )}
       </section>
 

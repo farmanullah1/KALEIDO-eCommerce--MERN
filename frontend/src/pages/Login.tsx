@@ -1,28 +1,42 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Shield, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import api from '../api/axios.js';
 import { useAuthStore } from '../store/authStore.js';
 import toast from 'react-hot-toast';
+import { shakeX } from '../lib/animations.js';
+
+const loginSchema = z.object({
+  email: z.string().email('Essence identifier must be a valid email'),
+  password: z.string().min(6, 'Access key must be at least 6 characters'),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const [isShaking, setIsShaking] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = async (values: LoginFormValues) => {
     setLoading(true);
-    
     try {
-      const { data } = await api.post('/auth/login', { email, password });
+      const { data } = await api.post('/auth/login', values);
       setAuth(data.data.user, data.data.accessToken);
       toast.success('Anchoring ritual complete. Welcome back.');
       navigate('/');
     } catch (error: any) {
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
       toast.error(error.response?.data?.message || 'The ritual failed. Please try again.');
     } finally {
       setLoading(false);
@@ -39,12 +53,11 @@ const Login = () => {
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        animate={isShaking ? shakeX.animate : { opacity: 1, y: 0 }}
+        transition={{ duration: isShaking ? 0.4 : 0.8, ease: "easeOut" }}
         className="w-full max-w-md z-10"
       >
         <div className="glass-card p-10 relative overflow-hidden">
-          {/* Glowing Top Bar */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary animate-gradient-x" />
           
           <div className="text-center mb-10">
@@ -60,20 +73,19 @@ const Login = () => {
             <p className="text-white/50 font-medium">Stabilize your presence in KALEIDO</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
               <label className="text-xs font-mono text-primary uppercase tracking-widest ml-1">Essence Identifier</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
                 <input
+                  {...register('email')}
                   type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@essence.com"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  className={`w-full bg-white/5 border ${errors.email ? 'border-red-500' : 'border-white/10'} rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all`}
                 />
               </div>
+              {errors.email && <p className="text-red-500 text-xs ml-1">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -81,14 +93,13 @@ const Login = () => {
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
                 <input
+                  {...register('password')}
                   type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  className={`w-full bg-white/5 border ${errors.password ? 'border-red-500' : 'border-white/10'} rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all`}
                 />
               </div>
+              {errors.password && <p className="text-red-500 text-xs ml-1">{errors.password.message}</p>}
             </div>
 
             <button

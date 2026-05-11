@@ -154,3 +154,28 @@ export const refreshAccessToken = asyncHandler(async (req: Request, res: Respons
     res.status(401).json(errorResponse('Refresh token expired or invalid'));
   }
 });
+
+// @desc    Upgrade user to seller
+// @route   POST /api/auth/upgrade
+// @access  Private
+export const upgradeToSeller = asyncHandler(async (req: Request, res: Response) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return res.status(404).json(errorResponse('User not found'));
+  }
+
+  if (user.role === 'seller' || user.role === 'admin') {
+    return res.status(400).json(errorResponse('User is already a seller or admin'));
+  }
+
+  user.role = 'seller';
+  await user.save();
+
+  res.json(successResponse({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  }, 'Successfully upgraded to seller'));
+});

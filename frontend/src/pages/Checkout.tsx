@@ -96,19 +96,63 @@ const Checkout = () => {
               <h2 className="text-3xl font-black mb-8 flex items-center gap-4">
                 <CreditCard className="text-primary" /> PAYMENT RITUAL
               </h2>
+              
+              {/* 3D Card Visual */}
+              <div className="mb-12 flex justify-center perspective-1000">
+                <motion.div 
+                  className="relative w-full max-w-[350px] h-48 preserve-3d"
+                  animate={{ rotateY: formData.cvv.length > 0 ? 180 : 0 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                >
+                  {/* Front */}
+                  <div className="absolute inset-0 backface-hidden glass-card !bg-gradient-to-br from-primary/20 via-background to-secondary/20 p-6 flex flex-col justify-between border border-white/20">
+                    <div className="flex justify-between items-start">
+                      <div className="w-12 h-8 bg-white/10 rounded-md" /> {/* Chip */}
+                      <Shield className="text-primary/50" />
+                    </div>
+                    <div>
+                      <div className="text-xl font-mono tracking-[0.2em] mb-4">
+                        {formData.cardNumber || 'XXXX XXXX XXXX XXXX'}
+                      </div>
+                      <div className="flex justify-between text-[10px] font-mono text-white/40 uppercase tracking-widest">
+                        <div>Card Holder</div>
+                        <div>Expires</div>
+                      </div>
+                      <div className="flex justify-between font-mono text-xs uppercase tracking-widest">
+                        <div>The Traveler</div>
+                        <div>{formData.expiry || 'MM/YY'}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Back */}
+                  <div className="absolute inset-0 backface-hidden glass-card !bg-gradient-to-br from-secondary/20 via-background to-primary/20 p-6 flex flex-col justify-between border border-white/20 [transform:rotateY(180deg)]">
+                    <div className="mt-4 h-10 w-full bg-black/40 -mx-6" />
+                    <div className="flex justify-end items-center">
+                      <div className="bg-white/10 px-4 py-2 rounded font-mono text-sm">
+                        {formData.cvv || 'XXX'}
+                      </div>
+                    </div>
+                    <div className="text-[8px] text-white/20 leading-tight">
+                      This digital artifact represents a secure link between dimensions. Authorized use only.
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-xs font-mono text-white/40">CARD NUMBER</label>
-                  <input name="cardNumber" value={formData.cardNumber} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="XXXX XXXX XXXX XXXX" />
+                  <input name="cardNumber" maxLength={19} value={formData.cardNumber} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="XXXX XXXX XXXX XXXX" />
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-mono text-white/40">EXPIRY</label>
-                    <input name="expiry" value={formData.expiry} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="MM/YY" />
+                    <input name="expiry" maxLength={5} value={formData.expiry} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="MM/YY" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-mono text-white/40">CVV</label>
-                    <input name="cvv" value={formData.cvv} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="XXX" />
+                    <input name="cvv" maxLength={3} value={formData.cvv} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="XXX" />
                   </div>
                 </div>
               </div>

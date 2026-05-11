@@ -1,7 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, User, LogOut, Shield } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Shield, LayoutDashboard, Zap, Heart } from 'lucide-react';
 import { useAuthStore } from '../store/authStore.js';
+import { upgradeToSeller } from '../api/auth.api.js';
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import HamburgerIcon from './HamburgerIcon.js';
 
@@ -23,6 +25,17 @@ const Navbar = () => {
     logout();
     navigate('/login');
     setIsMenuOpen(false);
+  };
+
+  const handleBecomeSeller = async () => {
+    try {
+      const { data } = await upgradeToSeller();
+      useAuthStore.getState().updateUser({ role: 'seller' });
+      toast.success('You are now a seller! Welcome to the marketplace.');
+      navigate('/seller/dashboard');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to upgrade to seller');
+    }
   };
 
   const navLinks = [
@@ -54,7 +67,11 @@ const Navbar = () => {
 
         {/* Action Icons */}
         <div className="flex items-center gap-4 md:gap-6">
-          <Link to="/cart" className="relative group" onClick={() => setIsMenuOpen(false)}>
+          <Link to="/wishlist" className="relative group" onClick={() => setIsMenuOpen(false)} title="Wishlist">
+            <Heart className="w-6 h-6 text-white/70 group-hover:text-magenta transition-colors" />
+          </Link>
+
+          <Link to="/cart" className="relative group" onClick={() => setIsMenuOpen(false)} title="Cart">
             <ShoppingCart className="w-6 h-6 text-white/70 group-hover:text-primary transition-colors" />
             <span className="absolute -top-2 -right-2 w-5 h-5 bg-secondary text-background text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-background">0</span>
           </Link>
@@ -62,6 +79,24 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-6">
             {isAuthenticated ? (
               <div className="flex items-center gap-4 border-l border-white/10 pl-6">
+                {user?.role === 'user' && (
+                  <button 
+                    onClick={handleBecomeSeller}
+                    className="text-xs font-mono font-bold text-primary hover:text-white flex items-center gap-1 transition-colors px-3 py-1 border border-primary/20 rounded-full hover:bg-primary/10"
+                  >
+                    <Zap size={12} /> BECOME SELLER
+                  </button>
+                )}
+                {user?.role === 'seller' && (
+                  <Link to="/seller/dashboard" className="text-xs font-mono font-bold text-cyan hover:text-white flex items-center gap-1 transition-colors">
+                    <LayoutDashboard size={14} /> SELLER PORTAL
+                  </Link>
+                )}
+                {user?.role === 'admin' && (
+                  <Link to="/admin/dashboard" className="text-xs font-mono font-bold text-magenta hover:text-white flex items-center gap-1 transition-colors">
+                    <Shield size={14} /> ADMIN COMMAND
+                  </Link>
+                )}
                 <Link to="/profile" className="flex items-center gap-2 group">
                   <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
                     <User className="w-4 h-4 text-primary" />

@@ -2,30 +2,42 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus, Mail, Lock, User, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import api from '../api/axios.js';
 import { useAuthStore } from '../store/authStore.js';
 import toast from 'react-hot-toast';
+import { shakeX, scaleIn } from '../lib/animations.js';
+
+const signupSchema = z.object({
+  name: z.string().min(2, 'Identity tag must be at least 2 characters'),
+  email: z.string().email('Essence identifier must be a valid email'),
+  password: z.string().min(6, 'Access key must be at least 6 characters'),
+});
+
+type SignupFormValues = z.infer<typeof signupSchema>;
 
 const Signup = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-  });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const [isShaking, setIsShaking] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const { register, handleSubmit, formState: { errors } } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+  });
+
+  const onSubmit = async (values: SignupFormValues) => {
     setLoading(true);
-    
     try {
-      const { data } = await api.post('/auth/register', formData);
+      const { data } = await api.post('/auth/register', values);
       setAuth(data.data.user, data.data.accessToken);
       toast.success('Threshold portal activated. Welcome, Traveler.');
       navigate('/');
     } catch (error: any) {
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
       toast.error(error.response?.data?.message || 'Portal failed to stabilize. Try again.');
     } finally {
       setLoading(false);
@@ -41,9 +53,9 @@ const Signup = () => {
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        initial="hidden"
+        animate={isShaking ? shakeX.animate : "visible"}
+        variants={scaleIn}
         className="w-full max-w-md z-10"
       >
         <div className="glass-card p-10 relative overflow-hidden">
@@ -61,20 +73,19 @@ const Signup = () => {
             <p className="text-white/50 font-medium">Initialize your journey into KALEIDO</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-1">
               <label className="text-xs font-mono text-secondary uppercase tracking-widest ml-1">Identity Tag</label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
                 <input
+                  {...register('name')}
                   type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="The Traveler"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all"
+                  className={`w-full bg-white/5 border ${errors.name ? 'border-red-500' : 'border-white/10'} rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all`}
                 />
               </div>
+              {errors.name && <p className="text-red-500 text-xs ml-1">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-1">
@@ -82,14 +93,13 @@ const Signup = () => {
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
                 <input
+                  {...register('email')}
                   type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="name@essence.com"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all"
+                  className={`w-full bg-white/5 border ${errors.email ? 'border-red-500' : 'border-white/10'} rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all`}
                 />
               </div>
+              {errors.email && <p className="text-red-500 text-xs ml-1">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-1">
@@ -97,14 +107,13 @@ const Signup = () => {
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
                 <input
+                  {...register('password')}
                   type="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="••••••••"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all"
+                  className={`w-full bg-white/5 border ${errors.password ? 'border-red-500' : 'border-white/10'} rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all`}
                 />
               </div>
+              {errors.password && <p className="text-red-500 text-xs ml-1">{errors.password.message}</p>}
             </div>
 
             <button

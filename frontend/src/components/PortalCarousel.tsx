@@ -97,20 +97,29 @@ export const PortalCarousel = ({ products }: { products: Product[] }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const groupRef = useRef<THREE.Group>(null);
 
+  const [isRotating, setIsRotating] = useState(true);
+
   useFrame((state, delta) => {
     if (!groupRef.current) return;
     
-    // Smoothly rotate the entire carousel to the active index
-    const targetRotation = -activeIndex * (Math.PI * 2 / products.length);
-    groupRef.current.rotation.y = THREE.MathUtils.lerp(
-      groupRef.current.rotation.y,
-      targetRotation,
-      delta * 4
-    );
+    if (isRotating) {
+      groupRef.current.rotation.y += delta * 0.1;
+    } else {
+      const targetRotation = -activeIndex * (Math.PI * 2 / products.length);
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(
+        groupRef.current.rotation.y,
+        targetRotation,
+        delta * 4
+      );
+    }
   });
 
   return (
-    <group ref={groupRef}>
+    <group 
+      ref={groupRef}
+      onPointerDown={() => setIsRotating(false)}
+      onPointerUp={() => setIsRotating(false)}
+    >
       {products.map((product, index) => (
         <ProductCard
           key={product.id}
