@@ -1,12 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, User, LogOut, Shield, LayoutDashboard, Zap, Heart } from 'lucide-react';
-import { useAuthStore } from '../store/authStore.js';
-import { upgradeToSeller } from '../api/auth.api.js';
+import { useAuthStore } from '../store/authStore';
+import { upgradeToSeller } from '../api/auth.api';
 import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
-import { useCartStore } from '../store/cartStore.js';
-import HamburgerIcon from './HamburgerIcon.js';
+import { useCartStore } from '../store/cartStore';
+import HamburgerIcon from './HamburgerIcon';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -53,7 +53,7 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${isScrolled || isMenuOpen ? 'bg-background/80 backdrop-blur-lg border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
+    <nav className={`fixed top-8 left-0 w-full z-50 transition-all duration-500 ${isScrolled || isMenuOpen ? 'bg-background/80 backdrop-blur-lg border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
       <div className="container mx-auto px-6 flex justify-between items-center">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group" onClick={() => setIsMenuOpen(false)}>
@@ -91,13 +91,13 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-6">
             {isAuthenticated ? (
               <div className="flex items-center gap-4 border-l border-white/10 pl-6">
-                {user?.role === 'user' && (
-                  <button 
-                    onClick={handleBecomeSeller}
+                {user?.role === 'buyer' && (
+                  <Link 
+                    to="/become-seller"
                     className="text-xs font-mono font-bold text-primary hover:text-white flex items-center gap-1 transition-colors px-3 py-1 border border-primary/20 rounded-full hover:bg-primary/10"
                   >
                     <Zap size={12} /> BECOME SELLER
-                  </button>
+                  </Link>
                 )}
                 {user?.role === 'seller' && (
                   <Link to="/seller/dashboard" className="text-xs font-mono font-bold text-cyan hover:text-white flex items-center gap-1 transition-colors">
@@ -140,7 +140,7 @@ const Navbar = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-[73px] left-0 w-full h-[calc(100vh-73px)] bg-background/95 backdrop-blur-2xl z-40 md:hidden overflow-y-auto"
+            className="fixed top-[105px] left-0 w-full h-[calc(100vh-105px)] bg-background/95 backdrop-blur-2xl z-40 md:hidden overflow-y-auto"
           >
             <div className="px-6 py-12 flex flex-col items-center gap-8 text-center">
               {navLinks.map((link, i) => (

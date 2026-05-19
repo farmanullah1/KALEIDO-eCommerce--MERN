@@ -13,6 +13,9 @@ import sellerRoutes from './routes/seller.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import wishlistRoutes from './routes/wishlist.routes.js';
 import couponRoutes from './routes/coupon.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
+
+import path from 'path';
 
 const app = express();
 
@@ -24,6 +27,9 @@ app.use(cors({
   origin: env.CLIENT_URL,
   credentials: true,
 }));
+
+// Serve static uploads
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Routes
 app.get('/', (req, res) => {
@@ -38,6 +44,7 @@ app.use('/api/seller', sellerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Error Handler
 app.use(globalErrorHandler);

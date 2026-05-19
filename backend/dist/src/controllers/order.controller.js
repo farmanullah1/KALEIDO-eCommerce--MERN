@@ -13,6 +13,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     }
     const items = cart.items.map(item => ({
         product: item.product,
+        sellerId: item.product.sellerId,
         name: item.product.name,
         image: item.product.images[0],
         price: item.price,
@@ -57,6 +58,25 @@ export const getOrderById = asyncHandler(async (req, res) => {
     else {
         res.status(404).json(errorResponse('Order not found'));
     }
+});
+// @desc    Get orders for a specific seller
+// @route   GET /api/orders/seller
+// @access  Private/Seller
+export const getSellerOrders = asyncHandler(async (req, res) => {
+    const orders = await Order.find({ 'items.sellerId': req.user._id })
+        .populate('user', 'name email')
+        .sort('-createdAt');
+    // Filter items in each order to only show those belonging to the seller
+    const sellerOrders = orders.map(order => {
+        const filteredItems = order.items.filter(item => item.sellerId.toString() === req.user._id.toString());
+        const sellerSubtotal = filteredItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        return {
+            ...order.toObject(),
+            items: filteredItems,
+            sellerSubtotal
+        };
+    });
+    res.json(successResponse(sellerOrders));
 });
 // @desc    Get logged in user orders
 // @route   GET /api/orders/mine

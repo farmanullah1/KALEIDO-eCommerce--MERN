@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, Cpu, Shield, Zap, MessageCircle, Share2, ExternalLink, MessageSquare, Send, X, Terminal, User } from 'lucide-react';
-import { useAuthStore } from '../store/authStore.js';
-import { useSocket } from '../hooks/useSocket.js';
+import { useAuthStore } from '../store/authStore';
+import { useSocket } from '../hooks/useSocket';
 
 const NeuralLink = () => {
   const [isOpen, setIsOpen] = useState(false);

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '../api/axios.js';
+import api from '../api/axios';
 import toast from 'react-hot-toast';
 
 interface CartItem {

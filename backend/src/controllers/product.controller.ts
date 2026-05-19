@@ -1,7 +1,16 @@
 import { Request, Response } from 'express';
 import { Product } from '../models/Product.js';
+import { Category } from '../models/Category.js';
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+
+// @desc    Get all categories
+// @route   GET /api/products/categories
+// @access  Public
+export const getCategories = asyncHandler(async (req: Request, res: Response) => {
+  const categories = await Category.find({ isActive: true });
+  res.json(successResponse(categories));
+});
 
 // @desc    Get all products with filters
 // @route   GET /api/products
@@ -71,10 +80,14 @@ export const getProductById = asyncHandler(async (req: Request, res: Response) =
 // @route   POST /api/products
 // @access  Private/Seller
 export const createProduct = asyncHandler(async (req: Request, res: Response) => {
-  const { name, price, description, category, subcategory, brand, stock, images, tags } = req.body;
+  const { name, price, description, category, subcategory, brand, stock, images, tags, details } = req.body;
+
+  // Simple slug generation
+  const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') + '-' + Date.now().toString().slice(-4);
 
   const product = new Product({
     name,
+    slug,
     price,
     description,
     category,
@@ -83,6 +96,7 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
     stock,
     images,
     tags,
+    details,
     sellerId: req.user._id,
     moderationStatus: 'pending', // Default to pending for new products
   });
@@ -95,7 +109,7 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
 // @route   PUT /api/products/:id
 // @access  Private/Seller/Admin
 export const updateProduct = asyncHandler(async (req: Request, res: Response) => {
-  const { name, price, description, category, subcategory, brand, stock, images, tags } = req.body;
+  const { name, price, description, category, subcategory, brand, stock, images, tags, details } = req.body;
 
   const product = await Product.findById(req.params.id);
 
@@ -114,6 +128,7 @@ export const updateProduct = asyncHandler(async (req: Request, res: Response) =>
     product.stock = stock || product.stock;
     product.images = images || product.images;
     product.tags = tags || product.tags;
+    product.details = details || product.details;
 
     // Reset moderation status on update if not admin
     if (req.user.role !== 'admin') {

@@ -7,39 +7,70 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = asyncHandler(async (req, res) => {
-    const { name, email, password } = req.body;
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-        return res.status(400).json(errorResponse('User already exists'));
+    console.log('🚀 Registration started for:', req.body.email);
+    try {
+        const { name, email, password, role, sellerInfo } = req.body;
+        console.log('🔍 Checking if user exists...');
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            console.log('❌ User already exists');
+            return res.status(400).json(errorResponse('User already exists'));
+        }
+        console.log('🔑 Hashing password...');
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+        console.log('✅ Password hashed');
+        const userData = {
+            name,
+            email,
+            passwordHash,
+            role: role || 'buyer',
+        };
+        if (role === 'seller' && sellerInfo) {
+            console.log('🏪 Adding seller info...');
+            userData.sellerInfo = {
+                shopName: sellerInfo.shopName,
+                shopDescription: sellerInfo.shopDescription || '',
+                shopLogo: sellerInfo.shopLogo || '',
+                banner: sellerInfo.banner || '',
+                gstNumber: sellerInfo.gstNumber || '',
+                socialLinks: sellerInfo.socialLinks || {},
+                isApproved: false,
+            };
+        }
+        console.log('💾 Creating user in DB...');
+        const user = await User.create(userData);
+        console.log('✅ User created with ID:', user._id);
+        if (user) {
+            console.log('🎟️ Generating tokens...');
+            const accessToken = generateAccessToken(user._id.toString());
+            const refreshToken = generateRefreshToken(user._id.toString());
+            user.refreshToken = refreshToken;
+            await user.save();
+            console.log('✅ Tokens generated and saved');
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            });
+            console.log('✨ Registration complete!');
+            res.status(201).json(successResponse({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                accessToken,
+            }, 'User registered successfully'));
+        }
+        else {
+            console.log('❌ Failed to create user object');
+            res.status(400).json(errorResponse('Invalid user data'));
+        }
     }
-    const salt = await bcrypt.genSalt(12);
-    const passwordHash = await bcrypt.hash(password, salt);
-    const user = await User.create({
-        name,
-        email,
-        passwordHash,
-    });
-    if (user) {
-        const accessToken = generateAccessToken(user._id.toString());
-        const refreshToken = generateRefreshToken(user._id.toString());
-        user.refreshToken = refreshToken;
-        await user.save();
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
-        res.status(201).json(successResponse({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            accessToken,
-        }, 'User registered successfully'));
-    }
-    else {
-        res.status(400).json(errorResponse('Invalid user data'));
+    catch (error) {
+        console.error('🔥 CRITICAL REGISTRATION ERROR:', error);
+        res.status(500).json(errorResponse('Internal Server Error during registration', error.message));
     }
 });
 // @desc    Auth user & get token
@@ -125,5 +156,34 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     catch (error) {
         res.status(401).json(errorResponse('Refresh token expired or invalid'));
     }
+});
+// @desc    Upgrade user to seller
+// @route   POST /api/auth/upgrade
+// @access  Private
+export const upgradeToSeller = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        return res.status(404).json(errorResponse('User not found'));
+    }
+    if (user.role === 'seller' || user.role === 'admin') {
+        return res.status(400).json(errorResponse('User is already a seller or admin'));
+    }
+    const { shopName, shopDescription, gstNumber, socialLinks, banner } = req.body;
+    user.role = 'seller';
+    user.sellerInfo = {
+        shopName: shopName || `${user.name}'s Shop`,
+        shopDescription: shopDescription || '',
+        gstNumber: gstNumber || '',
+        socialLinks: socialLinks || {},
+        banner: banner || '',
+        isApproved: false,
+    };
+    await user.save();
+    res.json(successResponse({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+    }, 'Successfully upgraded to seller'));
 });
 //# sourceMappingURL=auth.controller.js.map

@@ -1,19 +1,29 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus, Mail, Lock, User, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import api from '../api/axios.js';
-import { useAuthStore } from '../store/authStore.js';
+import api from '../api/axios';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
-import { shakeX, scaleIn } from '../lib/animations.js';
+import { shakeX, scaleIn } from '../lib/animations';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Identity tag must be at least 2 characters'),
   email: z.string().email('Essence identifier must be a valid email'),
   password: z.string().min(6, 'Access key must be at least 6 characters'),
+  role: z.enum(['buyer', 'seller']),
+  shopName: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.role === 'seller' && (!data.shopName || data.shopName.length < 3)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Shop designation is required for Merchants",
+      path: ["shopName"],
+    });
+  }
 });
 
 type SignupFormValues = z.infer<typeof signupSchema>;
@@ -24,15 +34,28 @@ const Signup = () => {
   const setAuth = useAuthStore((state) => state.setAuth);
   const [isShaking, setIsShaking] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema) as any,
+    defaultValues: {
+      role: 'buyer',
+      name: '',
+      email: '',
+      password: '',
+      shopName: ''
+    }
   });
+
+  const selectedRole = watch('role');
 
   const onSubmit = async (values: SignupFormValues) => {
     setLoading(true);
     try {
-      const { data } = await api.post('/auth/register', values);
-      setAuth(data.data.user, data.data.accessToken);
+      const payload = {
+        ...values,
+        sellerInfo: values.role === 'seller' ? { shopName: values.shopName } : undefined
+      };
+      const { data } = await api.post('/auth/register', payload);
+      setAuth(data.data, data.data.accessToken);
       toast.success('Threshold portal activated. Welcome, Traveler.');
       navigate('/');
     } catch (error: any) {
@@ -54,8 +77,12 @@ const Signup = () => {
 
       <motion.div 
         initial="hidden"
-        animate={isShaking ? shakeX.animate : "visible"}
-        variants={scaleIn}
+        animate={isShaking ? "shake" : "visible"}
+        variants={{
+          hidden: scaleIn.hidden,
+          visible: scaleIn.visible,
+          shake: shakeX.animate
+        }}
         className="w-full max-w-md z-10"
       >
         <div className="glass-card p-10 relative overflow-hidden">
@@ -71,6 +98,23 @@ const Signup = () => {
             </motion.div>
             <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">THRESHOLD PORTAL</h1>
             <p className="text-white/50 font-medium">Initialize your journey into KALEIDO</p>
+          </div>
+
+          <div className="flex bg-white/5 p-1 rounded-xl mb-8 border border-white/10">
+            <button
+              type="button"
+              onClick={() => setValue('role', 'buyer')}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${selectedRole === 'buyer' ? 'bg-secondary text-background shadow-lg' : 'text-white/40 hover:text-white'}`}
+            >
+              Traveler
+            </button>
+            <button
+              type="button"
+              onClick={() => setValue('role', 'seller')}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${selectedRole === 'seller' ? 'bg-primary text-background shadow-lg' : 'text-white/40 hover:text-white'}`}
+            >
+              Merchant
+            </button>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -115,6 +159,29 @@ const Signup = () => {
               </div>
               {errors.password && <p className="text-red-500 text-xs ml-1">{errors.password.message}</p>}
             </div>
+
+            <AnimatePresence mode="wait">
+              {selectedRole === 'seller' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-1 overflow-hidden"
+                >
+                  <label className="text-xs font-mono text-primary uppercase tracking-widest ml-1">Shop Designation</label>
+                  <div className="relative">
+                    <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                    <input
+                      {...register('shopName')}
+                      type="text"
+                      placeholder="My Cyber Emporium"
+                      className={`w-full bg-white/5 border ${errors.shopName ? 'border-red-500' : 'border-white/10'} rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all`}
+                    />
+                  </div>
+                  {errors.shopName && <p className="text-red-500 text-xs ml-1">{errors.shopName.message}</p>}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <button
               type="submit"

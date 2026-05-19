@@ -15,8 +15,13 @@ import AddProduct from './pages/seller/AddProduct.js';
 import SellerOrders from './pages/seller/Orders.js';
 import AdminDashboard from './pages/admin/Dashboard.js';
 import ModerationQueue from './pages/admin/ModerationQueue.js';
+import CategoryManagement from './pages/admin/CategoryManagement.js';
+import UserManagement from './pages/admin/UserManagement.js';
 import Wishlist from './pages/Wishlist.js';
 import Profile from './pages/Profile.js';
+import BecomeSeller from './pages/BecomeSeller.js';
+import OrderDetail from './pages/OrderDetail.js';
+import Compare from './pages/Compare.js';
 import { useAuthStore } from './store/authStore.js';
 import ProtectedRoute from './components/ProtectedRoute.js';
 import Navbar from './components/Navbar.js';
@@ -26,6 +31,8 @@ import CursorTracker from './components/CursorTracker.js';
 import PageWrapper from './components/PageWrapper.js';
 import { useSocket } from './hooks/useSocket.js';
 import NeuralLink from './components/NeuralLink.js';
+import Chatbot from './components/Chatbot.js';
+import NeuralTickerTape from './components/NeuralTickerTape.js';
 
 
 const AnimatedRoutes = () => {
@@ -50,10 +57,15 @@ const AnimatedRoutes = () => {
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<ProtectedRoute roles={['admin']}><PageWrapper><AdminDashboard /></PageWrapper></ProtectedRoute>} />
         <Route path="/admin/moderation" element={<ProtectedRoute roles={['admin']}><PageWrapper><ModerationQueue /></PageWrapper></ProtectedRoute>} />
+        <Route path="/admin/categories" element={<ProtectedRoute roles={['admin']}><PageWrapper><CategoryManagement /></PageWrapper></ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><PageWrapper><UserManagement /></PageWrapper></ProtectedRoute>} />
 
         <Route path="/search" element={<PageWrapper><Search /></PageWrapper>} />
         <Route path="/wishlist" element={<ProtectedRoute><PageWrapper><Wishlist /></PageWrapper></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><PageWrapper><Profile /></PageWrapper></ProtectedRoute>} />
+        <Route path="/become-seller" element={<ProtectedRoute><PageWrapper><BecomeSeller /></PageWrapper></ProtectedRoute>} />
+        <Route path="/orders/:id" element={<ProtectedRoute><PageWrapper><OrderDetail /></PageWrapper></ProtectedRoute>} />
+        <Route path="/compare" element={<PageWrapper><Compare /></PageWrapper>} />
         <Route path="*" element={<PageWrapper><NotFound /></PageWrapper>} />
       </Routes>
     </AnimatePresence>
@@ -66,6 +78,7 @@ function App() {
     <Router>
       <CursorTracker />
       <BackgroundEffect />
+      <NeuralTickerTape />
       <Navbar />
       <Toaster 
         position="bottom-right"
@@ -80,6 +93,7 @@ function App() {
       />
       <div className="noise-overlay" />
       <NeuralLink />
+      <Chatbot />
       <AnimatedRoutes />
       <Footer />
     </Router>

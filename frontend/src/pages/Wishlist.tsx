@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useWishlistStore } from '../store/wishlistStore.js';
-import ProductCard from '../components/ProductCard.js';
+import { useWishlistStore } from '../store/wishlistStore';
+import ProductCard from '../components/ProductCard';
 import { Heart, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { LoadingSpinner } from '../components/UIPolish.js';
+import { LoadingSpinner } from '../components/UIPolish';
 
 const Wishlist = () => {
   const { wishlist, isLoading, fetchWishlist } = useWishlistStore();

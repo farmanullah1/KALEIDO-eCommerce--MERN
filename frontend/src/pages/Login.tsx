@@ -5,10 +5,10 @@ import { Shield, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import api from '../api/axios.js';
-import { useAuthStore } from '../store/authStore.js';
+import api from '../api/axios';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
-import { shakeX } from '../lib/animations.js';
+import { shakeX } from '../lib/animations';
 
 const loginSchema = z.object({
   email: z.string().email('Essence identifier must be a valid email'),
@@ -31,7 +31,7 @@ const Login = () => {
     setLoading(true);
     try {
       const { data } = await api.post('/auth/login', values);
-      setAuth(data.data.user, data.data.accessToken);
+      setAuth(data.data, data.data.accessToken);
       toast.success('Anchoring ritual complete. Welcome back.');
       navigate('/');
     } catch (error: any) {
@@ -52,9 +52,14 @@ const Login = () => {
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={isShaking ? shakeX.animate : { opacity: 1, y: 0 }}
-        transition={{ duration: isShaking ? 0.4 : 0.8, ease: "easeOut" }}
+        initial="hidden"
+        animate={isShaking ? "shake" : "visible"}
+        variants={{
+          hidden: { opacity: 0, y: 20 },
+          visible: { opacity: 1, y: 0 },
+          shake: shakeX.animate
+        }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
         className="w-full max-w-md z-10"
       >
         <div className="glass-card p-10 relative overflow-hidden">

@@ -17,6 +17,7 @@ const ProductCard = ({ product, index, total, activeIndex, onClick }: {
   onClick: (index: number) => void;
 }) => {
   const meshRef = useRef<THREE.Group>(null);
+  const innerRef = useRef<THREE.Mesh>(null);
   
   // Calculate position on a circle
   const angle = (index / total) * Math.PI * 2;
@@ -36,6 +37,12 @@ const ProductCard = ({ product, index, total, activeIndex, onClick }: {
     if (index === activeIndex) {
       meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.1;
     }
+
+    // Animate the procedural 3D elements inside
+    if (innerRef.current) {
+      innerRef.current.rotation.x = state.clock.elapsedTime * 0.4;
+      innerRef.current.rotation.y = state.clock.elapsedTime * 0.6;
+    }
   });
 
   return (
@@ -48,20 +55,48 @@ const ProductCard = ({ product, index, total, activeIndex, onClick }: {
         <mesh>
           <planeGeometry args={[2, 3]} />
           <meshStandardMaterial 
-            color="#1A1A1A" 
+            color="#111" 
             transparent 
-            opacity={0.8} 
-            metalness={0.8} 
-            roughness={0.2} 
-          />
-          <DreiImage 
-            url={product.image} 
-            transparent 
-            opacity={index === activeIndex ? 1 : 0.5} 
-            scale={[1.8, 2.8]}
-            position={[0, 0, 0.01]}
+            opacity={0.85} 
+            metalness={0.9} 
+            roughness={0.1} 
           />
         </mesh>
+        
+        {/* Procedural Cybernetic 3D Geometry */}
+        <group position={[0, 0.2, 0.1]}>
+          {index % 3 === 0 ? (
+            <mesh ref={innerRef}>
+              <torusKnotGeometry args={[0.4, 0.12, 64, 8]} />
+              <meshStandardMaterial 
+                color={index === activeIndex ? "#00ffff" : "#ff00ff"} 
+                wireframe 
+                emissive={index === activeIndex ? "#00ffff" : "#ff00ff"}
+                emissiveIntensity={1.5}
+              />
+            </mesh>
+          ) : index % 3 === 1 ? (
+            <mesh ref={innerRef}>
+              <icosahedronGeometry args={[0.5, 1]} />
+              <meshStandardMaterial 
+                color={index === activeIndex ? "#00ffff" : "#00ffaa"} 
+                wireframe 
+                emissive={index === activeIndex ? "#00ffff" : "#00ffaa"}
+                emissiveIntensity={1.5}
+              />
+            </mesh>
+          ) : (
+            <mesh ref={innerRef}>
+              <octahedronGeometry args={[0.55, 0]} />
+              <meshStandardMaterial 
+                color={index === activeIndex ? "#ff00ff" : "#ffff00"} 
+                wireframe 
+                emissive={index === activeIndex ? "#ff00ff" : "#ffff00"}
+                emissiveIntensity={1.5}
+              />
+            </mesh>
+          )}
+        </group>
         
         {index === activeIndex && (
           <Text

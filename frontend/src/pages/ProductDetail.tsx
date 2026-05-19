@@ -2,16 +2,16 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, ArrowLeft, Star, Shield, Zap, RefreshCcw, Plus, Minus } from 'lucide-react';
-import api from '../api/axios.js';
+import api from '../api/axios';
 import toast from 'react-hot-toast';
-import { LoadingSpinner, WishlistButton } from '../components/UIPolish.js';
-import ProductReviews from '../components/ProductReviews.js';
-import HologramPreview from '../components/HologramPreview.js';
+import { LoadingSpinner, WishlistButton } from '../components/UIPolish';
+import ProductReviews from '../components/ProductReviews';
+import HologramPreview from '../components/HologramPreview';
 import { Box as BoxIcon, Image as ImageIcon } from 'lucide-react';
-import { useCartStore } from '../store/cartStore.js';
-import { PurchaseVelocity } from '../components/PurchaseVelocity.js';
-import ProductCard from '../components/ProductCard.js';
-import SEO from '../components/SEO.js';
+import { useCartStore } from '../store/cartStore';
+import { PurchaseVelocity } from '../components/PurchaseVelocity';
+import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -157,12 +157,30 @@ const ProductDetail = () => {
               <h1 className="text-5xl font-black mb-4 tracking-tighter">{product.name}</h1>
               <p className="text-3xl font-mono text-secondary font-bold mb-8">${product.price}</p>
               
-              <div className="prose prose-invert max-w-none mb-12">
+              <div className="prose prose-invert max-w-none mb-8">
                 <p className="text-xl text-white/60 leading-relaxed">
                   {product.description}
                 </p>
                 <PurchaseVelocity />
               </div>
+
+              {/* Technical Specs */}
+              {product.details && (
+                <div className="mb-12 space-y-4">
+                  <h3 className="text-sm font-mono uppercase tracking-widest text-primary/60">Technical Specifications</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {Object.entries(product.details).map(([key, value]) => value && (
+                      <div key={key} className="glass-card p-4 border-white/5">
+                        <p className="text-[10px] font-mono uppercase text-white/20 mb-1">{key}</p>
+                        <p className="text-sm font-bold text-white/80">{value as string}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Holographic Calibration Matrix */}
+              <HolographicCalibrator />
 
               {/* Action Controls */}
               <div className="flex flex-col sm:flex-row gap-6 mb-12">
@@ -227,6 +245,108 @@ const ProductDetail = () => {
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+const HolographicCalibrator = () => {
+  const [frequency, setFrequency] = useState(432);
+  const [voltage, setVoltage] = useState(80);
+  const [rift, setRift] = useState(1.0);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+      toast.success('Thought Vector Calibration synchronized to local mesh!');
+    }, 1500);
+  };
+
+  return (
+    <div className="glass-card p-6 border-primary/20 shadow-[0_0_20px_rgba(0,255,255,0.05)] mb-10">
+      <div className="flex items-center justify-between mb-6">
+        <h4 className="font-extrabold text-sm uppercase tracking-wider text-white flex items-center gap-2">
+          <Zap className="w-4 h-4 text-primary animate-pulse" /> Neural Calibrator Deck
+        </h4>
+        <span className="text-[9px] font-mono text-primary uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+          Module Active
+        </span>
+      </div>
+
+      <div className="space-y-5">
+        {/* Frequency Slider */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs font-mono">
+            <span className="text-white/40 uppercase">Wave Frequency</span>
+            <span className="text-primary font-bold">{frequency} Hz</span>
+          </div>
+          <input 
+            type="range" 
+            min="200" 
+            max="800" 
+            value={frequency} 
+            onChange={(e) => setFrequency(parseInt(e.target.value))}
+            className="w-full accent-primary bg-white/10 h-1 rounded-lg cursor-pointer"
+          />
+        </div>
+
+        {/* Voltage Slider */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs font-mono">
+            <span className="text-white/40 uppercase">Calibration Voltage</span>
+            <span className="text-secondary font-bold">{voltage}%</span>
+          </div>
+          <input 
+            type="range" 
+            min="10" 
+            max="150" 
+            value={voltage} 
+            onChange={(e) => setVoltage(parseInt(e.target.value))}
+            className="w-full accent-secondary bg-white/10 h-1 rounded-lg cursor-pointer"
+          />
+        </div>
+
+        {/* Rift Slider */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs font-mono">
+            <span className="text-white/40 uppercase">Rift Ratio</span>
+            <span className="text-magenta font-bold">1:{rift.toFixed(2)}</span>
+          </div>
+          <input 
+            type="range" 
+            min="0.1" 
+            max="3.0" 
+            step="0.05"
+            value={rift} 
+            onChange={(e) => setRift(parseFloat(e.target.value))}
+            className="w-full accent-magenta bg-white/10 h-1 rounded-lg cursor-pointer"
+          />
+        </div>
+      </div>
+
+      {/* Calibration status console */}
+      <div className="mt-6 bg-black/50 border border-white/5 rounded-xl p-3 font-mono text-[9px] text-white/30 uppercase space-y-1.5">
+        <div>○ STATUS: FREQUENCY SYNCED AT {frequency}HZ</div>
+        <div>○ MATRIX VOLTAGE: {voltage > 120 ? 'OVERCHARGED' : 'OPTIMAL'} ({voltage}V)</div>
+        <div>○ DOCK ALIGNMENT INDEX: 1:{rift.toFixed(2)}</div>
+      </div>
+
+      <button
+        onClick={handleSync}
+        disabled={isSyncing}
+        className="w-full mt-6 btn-secondary py-3 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 group relative overflow-hidden"
+      >
+        {isSyncing ? (
+          <span className="flex items-center gap-2">
+            <RefreshCcw className="w-3.5 h-3.5 animate-spin text-primary" /> Synchronizing Cortex Matrix...
+          </span>
+        ) : (
+          <>
+            <Zap className="w-3.5 h-3.5 text-primary group-hover:scale-125 transition-transform" /> Lock Thought Calibration
+          </>
+        )}
+      </button>
     </div>
   );
 };

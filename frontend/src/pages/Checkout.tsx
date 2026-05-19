@@ -1,22 +1,24 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, CreditCard, Truck, CheckCircle2, ArrowRight } from 'lucide-react';
-import api from '../api/axios.js';
+import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { Checkmark } from '../components/UIPolish.js';
-import { Confetti } from '../components/Confetti.js';
-import { useCartStore } from '../store/cartStore.js';
+import { Checkmark, Confetti } from '../components/UIPolish';
+import { useCartStore } from '../store/cartStore';
 
 const Checkout = () => {
   const [step, setStep] = useState(1);
   const [order, setOrder] = useState<any>(null);
   const [typedId, setTypedId] = useState('');
   const [formData, setFormData] = useState({
+    name: '',
     address: '',
     city: '',
     zip: '',
     country: '',
+    state: '',
+    phone: '',
     cardNumber: '',
     expiry: '',
     cvv: ''
@@ -30,8 +32,20 @@ const Checkout = () => {
 
   const handlePlaceOrder = async () => {
     try {
-      const shippingAddress = `${formData.address}, ${formData.city}, ${formData.zip}, ${formData.country}`;
-      const { data } = await api.post('/orders', { shippingAddress });
+      const shippingAddress = {
+        name: formData.name,
+        line1: formData.address,
+        city: formData.city,
+        postalCode: formData.zip,
+        country: formData.country,
+        state: formData.state,
+        phone: formData.phone
+      };
+      
+      const { data } = await api.post('/orders', { 
+        shippingAddress,
+        paymentMethod: 'card'
+      });
       setOrder(data.data);
       clearCart();
       toast.success('Order Anchored Successfully!');
@@ -76,6 +90,10 @@ const Checkout = () => {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2 space-y-2">
+                  <label className="text-xs font-mono text-white/40">RECEIVER NAME</label>
+                  <input name="name" value={formData.name} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Full Name" />
+                </div>
+                <div className="md:col-span-2 space-y-2">
                   <label className="text-xs font-mono text-white/40">ADDRESS</label>
                   <input name="address" value={formData.address} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Enter full address" />
                 </div>
@@ -84,8 +102,20 @@ const Checkout = () => {
                   <input name="city" value={formData.city} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="City" />
                 </div>
                 <div className="space-y-2">
+                  <label className="text-xs font-mono text-white/40">STATE / PROVINCE</label>
+                  <input name="state" value={formData.state} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="State" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-mono text-white/40">ZIP / POSTAL CODE</label>
+                  <input name="zip" value={formData.zip} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Zip" />
+                </div>
+                <div className="space-y-2">
                   <label className="text-xs font-mono text-white/40">COUNTRY</label>
                   <input name="country" value={formData.country} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Country" />
+                </div>
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-xs font-mono text-white/40">PHONE NUMBER</label>
+                  <input name="phone" value={formData.phone} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="+1 XXX XXX XXXX" />
                 </div>
               </div>
               <button onClick={() => setStep(2)} className="btn-primary w-full mt-12 py-4 flex items-center justify-center gap-3">

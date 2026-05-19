@@ -1,5 +1,6 @@
 import { Cart } from '../models/Cart.js';
 import { Product } from '../models/Product.js';
+import { Coupon } from '../models/Coupon.js';
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 // @desc    Get user cart
@@ -81,15 +82,32 @@ export const applyPromoCode = asyncHandler(async (req, res) => {
     if (!cart) {
         return res.status(404).json(errorResponse('Cart not found'));
     }
-    // Mock promo code logic
-    if (code === 'KALEIDO20') {
-        cart.promoCode = code;
-        cart.discountPct = 20;
-        await cart.save();
-        res.json(successResponse(cart, 'Promo code applied: 20% discount'));
+    const coupon = await Coupon.findOne({ code, isActive: true });
+    if (!coupon) {
+        return res.status(404).json(errorResponse('Invalid or inactive promo code'));
+    }
+    if (new Date() > coupon.expiryDate) {
+        return res.status(400).json(errorResponse('Promo code has expired'));
+    }
+    if (coupon.usedCount >= coupon.usageLimit) {
+        return res.status(400).json(errorResponse('Promo code limit reached'));
+    }
+    const cartTotal = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    if (cartTotal < coupon.minPurchaseAmount) {
+        return res.status(400).json(errorResponse(`Minimum purchase of $${coupon.minPurchaseAmount} required`));
+    }
+    cart.promoCode = coupon.code;
+    if (coupon.discountType === 'percentage') {
+        cart.discountPct = coupon.discountAmount;
     }
     else {
-        res.status(400).json(errorResponse('Invalid promo code'));
+        // For fixed amount, we store it differently or convert to effective percentage
+        // For simplicity, let's assume discountPct is what we use, or add a discountAmount field
+        // I'll stick to percentage for now or update the cart model.
+        // Let's assume we use percentage for now as per ICart interface.
+        cart.discountPct = Math.round((coupon.discountAmount / cartTotal) * 100);
     }
+    await cart.save();
+    res.json(successResponse(cart, `Promo applied: ${coupon.discountAmount}${coupon.discountType === 'percentage' ? '%' : '$'} discount`));
 });
 //# sourceMappingURL=cart.controller.js.map

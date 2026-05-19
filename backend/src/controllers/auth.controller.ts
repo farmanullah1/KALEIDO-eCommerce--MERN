@@ -8,51 +8,87 @@ import {
 } from '../utils/jwt.js';
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { sendWelcomeEmail } from '../services/email.service.js';
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = asyncHandler(async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
+  console.log('🚀 Registration started for:', req.body.email);
+  try {
+    const { name, email, password, role, sellerInfo } = req.body;
 
-  const userExists = await User.findOne({ email });
+    console.log('🔍 Checking if user exists...');
+    const userExists = await User.findOne({ email });
 
-  if (userExists) {
-    return res.status(400).json(errorResponse('User already exists'));
-  }
+    if (userExists) {
+      console.log('❌ User already exists');
+      return res.status(400).json(errorResponse('User already exists'));
+    }
 
-  const salt = await bcrypt.genSalt(12);
-  const passwordHash = await bcrypt.hash(password, salt);
+    console.log('🔑 Hashing password...');
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+    console.log('✅ Password hashed');
 
-  const user = await User.create({
-    name,
-    email,
-    passwordHash,
-  });
+    const userData: any = {
+      name,
+      email,
+      passwordHash,
+      role: role || 'buyer',
+    };
 
-  if (user) {
-    const accessToken = generateAccessToken(user._id.toString());
-    const refreshToken = generateRefreshToken(user._id.toString());
+    if (role === 'seller' && sellerInfo) {
+      console.log('🏪 Adding seller info...');
+      userData.sellerInfo = {
+        shopName: sellerInfo.shopName,
+        shopDescription: sellerInfo.shopDescription || '',
+        shopLogo: sellerInfo.shopLogo || '',
+        banner: sellerInfo.banner || '',
+        gstNumber: sellerInfo.gstNumber || '',
+        socialLinks: sellerInfo.socialLinks || {},
+        isApproved: false,
+      };
+    }
 
-    user.refreshToken = refreshToken;
-    await user.save();
+    console.log('💾 Creating user in DB...');
+    const user = await User.create(userData);
+    console.log('✅ User created with ID:', user._id);
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    if (user) {
+      console.log('🎟️ Generating tokens...');
+      const accessToken = generateAccessToken(user._id.toString());
+      const refreshToken = generateRefreshToken(user._id.toString());
 
-    res.status(201).json(successResponse({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      accessToken,
-    }, 'User registered successfully'));
-  } else {
-    res.status(400).json(errorResponse('Invalid user data'));
+      user.refreshToken = refreshToken;
+      await user.save();
+      console.log('✅ Tokens generated and saved');
+
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      console.log('📧 Sending welcome email...');
+      await sendWelcomeEmail(user.email, user.name, user.role);
+
+      console.log('✨ Registration complete!');
+      res.status(201).json(successResponse({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        accessToken,
+      }, 'User registered successfully'));
+    } else {
+      console.log('❌ Failed to create user object');
+      res.status(400).json(errorResponse('Invalid user data'));
+    }
+  } catch (error: any) {
+    console.error('🔥 CRITICAL REGISTRATION ERROR:', error);
+    res.status(500).json(errorResponse('Internal Server Error during registration', error.message));
   }
 });
 
@@ -169,8 +205,21 @@ export const upgradeToSeller = asyncHandler(async (req: Request, res: Response) 
     return res.status(400).json(errorResponse('User is already a seller or admin'));
   }
 
+  const { shopName, shopDescription, gstNumber, socialLinks, banner } = req.body;
+
   user.role = 'seller';
+  user.sellerInfo = {
+    shopName: shopName || `${user.name}'s Shop`,
+    shopDescription: shopDescription || '',
+    gstNumber: gstNumber || '',
+    socialLinks: socialLinks || {},
+    banner: banner || '',
+    isApproved: false,
+  };
   await user.save();
+
+  console.log('📧 Sending merchant welcome email...');
+  await sendWelcomeEmail(user.email, user.name, 'seller');
 
   res.json(successResponse({
     _id: user._id,

@@ -1,6 +1,14 @@
 import { Product } from '../models/Product.js';
+import { Category } from '../models/Category.js';
 import { successResponse, errorResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+// @desc    Get all categories
+// @route   GET /api/products/categories
+// @access  Public
+export const getCategories = asyncHandler(async (req, res) => {
+    const categories = await Category.find({ isActive: true });
+    res.json(successResponse(categories));
+});
 // @desc    Get all products with filters
 // @route   GET /api/products
 // @access  Public
@@ -28,7 +36,7 @@ export const getProducts = asyncHandler(async (req, res) => {
         sort['rating.average'] = -1;
     else
         sort.createdAt = -1;
-    const filter = { ...keyword, ...category, ...priceFilter };
+    const filter = { ...keyword, ...category, ...priceFilter, moderationStatus: 'active' };
     const count = await Product.countDocuments(filter);
     const products = await Product.find(filter)
         .sort(sort)
@@ -55,6 +63,146 @@ export const getProductById = asyncHandler(async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (product) {
         res.json(successResponse(product));
+    }
+    else {
+        res.status(404).json(errorResponse('Product not found'));
+    }
+});
+// @desc    Create a product
+// @route   POST /api/products
+// @access  Private/Seller
+export const createProduct = asyncHandler(async (req, res) => {
+    const { name, price, description, category, subcategory, brand, stock, images, tags, details } = req.body;
+    // Simple slug generation
+    const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') + '-' + Date.now().toString().slice(-4);
+    const product = new Product({
+        name,
+        slug,
+        price,
+        description,
+        category,
+        subcategory,
+        brand,
+        stock,
+        images,
+        tags,
+        details,
+        sellerId: req.user._id,
+        moderationStatus: 'pending', // Default to pending for new products
+    });
+    const createdProduct = await product.save();
+    res.status(201).json(successResponse(createdProduct, 'Product created and pending moderation'));
+});
+// @desc    Update a product
+// @route   PUT /api/products/:id
+// @access  Private/Seller/Admin
+export const updateProduct = asyncHandler(async (req, res) => {
+    const { name, price, description, category, subcategory, brand, stock, images, tags, details } = req.body;
+    const product = await Product.findById(req.params.id);
+    if (product) {
+        // Only seller or admin can update
+        if (product.sellerId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json(errorResponse('Not authorized to update this product'));
+        }
+        product.name = name || product.name;
+        product.price = price || product.price;
+        product.description = description || product.description;
+        product.category = category || product.category;
+        product.subcategory = subcategory || product.subcategory;
+        product.brand = brand || product.brand;
+        product.stock = stock || product.stock;
+        product.images = images || product.images;
+        product.tags = tags || product.tags;
+        product.details = details || product.details;
+        // Reset moderation status on update if not admin
+        if (req.user.role !== 'admin') {
+            product.moderationStatus = 'pending';
+        }
+        const updatedProduct = await product.save();
+        res.json(successResponse(updatedProduct, 'Product updated successfully'));
+    }
+    else {
+        res.status(404).json(errorResponse('Product not found'));
+    }
+});
+// @desc    Delete a product
+// @route   DELETE /api/products/:id
+// @access  Private/Seller/Admin
+export const deleteProduct = asyncHandler(async (req, res) => {
+    const product = await Product.findById(req.params.id);
+    if (product) {
+        // Only seller or admin can delete
+        if (product.sellerId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json(errorResponse('Not authorized to delete this product'));
+        }
+        await Product.deleteOne({ _id: product._id });
+        res.json(successResponse(null, 'Product removed'));
+    }
+    else {
+        res.status(404).json(errorResponse('Product not found'));
+    }
+});
+// @desc    Get seller products
+// @route   GET /api/products/seller
+// @access  Private/Seller
+export const getSellerProducts = asyncHandler(async (req, res) => {
+    const products = await Product.find({ sellerId: req.user._id });
+    res.json(successResponse(products));
+});
+// @desc    Update product moderation status
+// @route   PUT /api/products/:id/moderation
+// @access  Private/Admin
+export const updateProductModeration = asyncHandler(async (req, res) => {
+    const { status } = req.body;
+    if (!['active', 'rejected'].includes(status)) {
+        return res.status(400).json(errorResponse('Invalid moderation status'));
+    }
+    const product = await Product.findById(req.params.id);
+    if (product) {
+        product.moderationStatus = status;
+        const updatedProduct = await product.save();
+        // Notify seller via Socket.io
+        const io = req.app.get('io');
+        if (io) {
+            io.to(product.sellerId.toString()).emit('notification', {
+                type: 'PRODUCT_MODERATION',
+                message: `Your artifact "${product.name}" has been ${status === 'active' ? 'approved' : 'rejected'}.`,
+                productId: product._id,
+                status: status,
+                createdAt: new Date()
+            });
+        }
+        res.json(successResponse(updatedProduct, `Product ${status} successfully`));
+    }
+    else {
+        res.status(404).json(errorResponse('Product not found'));
+    }
+});
+// @desc    Create new review
+// @route   POST /api/products/:id/reviews
+// @access  Private
+export const createProductReview = asyncHandler(async (req, res) => {
+    const { rating, comment } = req.body;
+    const product = await Product.findById(req.params.id);
+    if (product) {
+        const alreadyReviewed = product.reviews.find((r) => r.user.toString() === req.user._id.toString());
+        if (alreadyReviewed) {
+            return res.status(400).json(errorResponse('Product already reviewed'));
+        }
+        const review = {
+            name: req.user.name,
+            rating: Number(rating),
+            comment,
+            user: req.user._id,
+            createdAt: new Date(),
+        };
+        product.reviews.push(review);
+        product.rating.count = product.reviews.length;
+        product.rating.average =
+            product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+                product.reviews.length;
+        await product.save();
+        res.status(201).json(successResponse(null, 'Review added'));
     }
     else {
         res.status(404).json(errorResponse('Product not found'));

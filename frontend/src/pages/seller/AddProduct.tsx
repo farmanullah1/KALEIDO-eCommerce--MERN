@@ -3,15 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Package, Upload, Plus, Minus, DollarSign, Tag, Info, 
-  ChevronLeft, CheckCircle, Image as ImageIcon 
+  ChevronLeft, CheckCircle, Image as ImageIcon, AlertCircle, X
 } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
 import { createProduct } from '../../api/products.api';
 import { LoadingSpinner } from '../../components/UIPolish';
+import ImageUpload from '../../components/ImageUpload';
 import toast from 'react-hot-toast';
 
 const AddProduct = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const isApproved = user?.sellerInfo?.isApproved;
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -106,6 +110,14 @@ const AddProduct = () => {
             <p className="text-white/40 font-mono text-sm uppercase tracking-widest">Digital Asset Creation Protocol</p>
           </div>
         </div>
+        {!isApproved && (
+          <div className="bg-yellow-500/10 border border-yellow-500/20 p-6 rounded-2xl mb-8 flex items-center gap-4">
+            <AlertCircle className="text-yellow-500" />
+            <p className="text-sm text-white/60 font-mono uppercase tracking-wider">
+              Neural Link Restricted: Your merchant credentials are currently under review. Forge capabilities are suspended until authorization.
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* General Information */}
@@ -193,38 +205,41 @@ const AddProduct = () => {
               </div>
             </div>
 
-            <div className="glass-card p-8">
+            <div className="glass-card p-8 md:col-span-2">
               <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                 <ImageIcon size={20} className="text-magenta" /> Visual Assets
               </h3>
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {formData.images.map((img, i) => (
-                  <div key={i} className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="Image URL..."
-                      className="flex-1 bg-white/5 border border-white/10 rounded-xl py-4 px-6 outline-none focus:border-magenta/50 transition-all text-xs"
+                  <div key={i} className="relative group">
+                    <ImageUpload 
+                      label={`View ${i + 1}`}
                       value={img}
-                      onChange={(e) => handleImageChange(i, e.target.value)}
+                      onUpload={(url) => handleImageChange(i, url)}
+                      aspectRatio="aspect-square"
                     />
                     {formData.images.length > 1 && (
                       <button 
                         type="button"
                         onClick={() => removeImageField(i)}
-                        className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                        className="absolute top-8 right-2 p-1 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
                       >
-                        <Minus size={18} />
+                        <X size={12} />
                       </button>
                     )}
                   </div>
                 ))}
-                <button 
-                  type="button"
-                  onClick={addImageField}
-                  className="w-full py-4 border-2 border-dashed border-white/10 rounded-xl text-white/40 hover:border-magenta/50 hover:text-magenta transition-all flex items-center justify-center gap-2 text-xs font-bold uppercase"
-                >
-                  <Plus size={18} /> Add Another View
-                </button>
+                
+                {formData.images.length < 4 && (
+                  <button 
+                    type="button"
+                    onClick={addImageField}
+                    className="aspect-square border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 text-white/30 hover:border-primary hover:text-primary transition-all mt-6"
+                  >
+                    <Plus size={24} />
+                    <span className="text-[10px] font-mono uppercase tracking-widest">Add View</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -279,8 +294,8 @@ const AddProduct = () => {
             </button>
             <button 
               type="submit"
-              disabled={loading}
-              className="btn-primary px-12 py-5 text-lg font-black tracking-tighter uppercase relative overflow-hidden group min-w-[200px]"
+              disabled={loading || !isApproved}
+              className={`btn-primary px-12 py-5 text-lg font-black tracking-tighter uppercase relative overflow-hidden group min-w-[200px] ${!isApproved ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
             >
               {loading ? <LoadingSpinner size="small" /> : (
                 <>

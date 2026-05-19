@@ -6,11 +6,16 @@ export interface IProduct extends Document {
   description: string;
   price: number;
   comparePrice?: number;
-  category: 'electronics' | 'fashion' | 'home-decor' | 'beauty' | 'sports';
+  category: 'Cyberwear' | 'Neural Links' | 'Holographics' | 'Data Shards' | 'Virtual Real Estate' | 'Synthetics';
   subcategory: string;
   brand: string;
   stock: number;
   images: string[];
+  details: {
+    material: string;
+    weight: string;
+    dimensions: string;
+  };
   rating: {
     average: number;
     count: number;
@@ -35,11 +40,16 @@ const productSchema = new Schema<IProduct>({
   description: String,
   price:       { type: Number, required: true },
   comparePrice:Number,
-  category:    { type: String, enum: ['electronics', 'fashion', 'home-decor', 'beauty', 'sports'] },
+  category:    { type: String, enum: ['Cyberwear', 'Neural Links', 'Holographics', 'Data Shards', 'Virtual Real Estate', 'Synthetics'] },
   subcategory: String,
   brand:       String,
   stock:       { type: Number, default: 0 },
   images:      [String],
+  details: {
+    material: String,
+    weight: String,
+    dimensions: String
+  },
   rating: {
     average: { type: Number, default: 0 },
     count:   { type: Number, default: 0 }

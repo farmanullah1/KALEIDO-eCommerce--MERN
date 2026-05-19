@@ -1,80 +1,168 @@
 import { Request, Response } from 'express';
-import { Product } from '../models/Product.js';
 import { User } from '../models/User.js';
+import { Product } from '../models/Product.js';
 import { Order } from '../models/Order.js';
-import { successResponse } from '../utils/apiResponse.js';
+import { Category } from '../models/Category.js';
+import { successResponse, errorResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { sendApprovalEmail, sendRejectionEmail } from '../services/email.service.js';
 
-// @desc    Get admin dashboard statistics
-// @route   GET /api/admin/stats
+// ... (existing functions)
+
+// @desc    Create category
+// @route   POST /api/admin/categories
 // @access  Private/Admin
-export const getAdminStats = asyncHandler(async (req: Request, res: Response) => {
-  const totalUsers = await User.countDocuments();
-  const totalSellers = await User.countDocuments({ role: 'seller' });
-  const totalProducts = await Product.countDocuments();
-  const pendingProducts = await Product.countDocuments({ moderationStatus: 'pending' });
-  
-  const orders = await Order.find();
-  const totalRevenue = orders.reduce((acc, order) => acc + (order.total || 0), 0);
+export const createCategory = asyncHandler(async (req: Request, res: Response) => {
+  const { name, description, image } = req.body;
+  const category = await Category.create({ name, description, image });
+  res.status(201).json(successResponse(category, 'Category integrated into matrix'));
+});
 
-  const revenueByMonth = await Order.aggregate([
-    {
-      $group: {
-        _id: { $month: "$createdAt" },
-        revenue: { $sum: "$total" }
-      }
-    },
-    { $sort: { "_id": 1 } }
-  ]);
+// @desc    Update category
+// @route   PUT /api/admin/categories/:id
+// @access  Private/Admin
+export const updateCategory = asyncHandler(async (req: Request, res: Response) => {
+  const category = await Category.findById(req.params.id);
+  if (category) {
+    category.name = req.body.name || category.name;
+    category.description = req.body.description || category.description;
+    category.image = req.body.image || category.image;
+    await category.save();
+    res.json(successResponse(category, 'Node recalibrated'));
+  } else {
+    res.status(404).json(errorResponse('Node not found'));
+  }
+});
 
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const revenueData = revenueByMonth.map(item => ({
-    name: monthNames[item._id - 1],
-    revenue: item.revenue
-  }));
-
-  // Fallback for empty data
-  const finalRevenueData = revenueData.length > 0 ? revenueData : [
-    { name: 'Jan', revenue: 0 },
-    { name: 'Feb', revenue: 0 },
-    { name: 'Mar', revenue: 0 },
-  ];
-
-  res.json(successResponse({
-    totalUsers,
-    totalSellers,
-    totalProducts,
-    pendingProducts,
-    totalRevenue,
-    revenueData: finalRevenueData
-  }));
+// @desc    Delete category
+// @route   DELETE /api/admin/categories/:id
+// @access  Private/Admin
+export const deleteCategory = asyncHandler(async (req: Request, res: Response) => {
+  const category = await Category.findById(req.params.id);
+  if (category) {
+    await category.deleteOne();
+    res.json(successResponse(null, 'Node dissolved'));
+  } else {
+    res.status(404).json(errorResponse('Node not found'));
+  }
 });
 
 // @desc    Get all users
 // @route   GET /api/admin/users
 // @access  Private/Admin
-export const getUsers = asyncHandler(async (req: Request, res: Response) => {
-  const users = await User.find().select('-passwordHash');
+export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
+  const users = await User.find({}).select('-passwordHash');
   res.json(successResponse(users));
 });
 
-// @desc    Update user role
-// @route   PUT /api/admin/users/:id/role
+// @desc    Update user role or delete user
+// @route   PUT /api/admin/users/:id
 // @access  Private/Admin
-export const updateUserRole = asyncHandler(async (req: Request, res: Response) => {
+export const updateUserByAdmin = asyncHandler(async (req: Request, res: Response) => {
   const { role } = req.body;
-
-  if (!['user', 'seller', 'admin'].includes(role)) {
-    return res.status(400).json(errorResponse('Invalid role'));
-  }
-
   const user = await User.findById(req.params.id);
 
   if (user) {
-    user.role = role;
-    await user.save();
-    res.json(successResponse(user, `User role updated to ${role}`));
+    user.role = role || user.role;
+    const updatedUser = await user.save();
+    res.json(successResponse(updatedUser, 'User updated successfully'));
   } else {
     res.status(404).json(errorResponse('User not found'));
   }
+});
+
+// @desc    Delete user
+// @route   DELETE /api/admin/users/:id
+// @access  Private/Admin
+export const deleteUserByAdmin = asyncHandler(async (req: Request, res: Response) => {
+  const user = await User.findById(req.params.id);
+
+  if (user) {
+    if (user.role === 'admin') {
+      return res.status(400).json(errorResponse('Cannot delete admin user'));
+    }
+    await user.deleteOne();
+    res.json(successResponse(null, 'User deleted successfully'));
+  } else {
+    res.status(404).json(errorResponse('User not found'));
+  }
+});
+
+// @desc    Get pending sellers
+// @route   GET /api/admin/sellers/pending
+// @access  Private/Admin
+export const getPendingSellers = asyncHandler(async (req: Request, res: Response) => {
+  const sellers = await User.find({ role: 'seller', 'sellerInfo.isApproved': false });
+  res.json(successResponse(sellers));
+});
+
+// @desc    Approve/Reject seller
+// @route   PUT /api/admin/sellers/:id/approve
+// @access  Private/Admin
+export const approveSeller = asyncHandler(async (req: Request, res: Response) => {
+  const { isApproved } = req.body;
+  const seller = await User.findById(req.params.id);
+
+  if (seller && seller.role === 'seller') {
+    if (seller.sellerInfo) {
+      seller.sellerInfo.isApproved = isApproved;
+      await seller.save();
+      
+      // Notify the merchant of the outcome
+      if (isApproved) {
+        await sendApprovalEmail(seller.email, seller.name, seller.sellerInfo.shopName);
+      } else {
+        await sendRejectionEmail(seller.email, seller.name);
+      }
+
+      // Real-time notification via Socket.io
+      const io = req.app.get('io');
+      if (io) {
+        io.to(seller._id.toString()).emit('notification', {
+          type: isApproved ? 'SUCCESS' : 'ERROR',
+          message: isApproved 
+            ? 'Neural link established! Your merchant credentials have been authorized.' 
+            : 'Neural link terminated. Your merchant application was declined.',
+          timestamp: new Date()
+        });
+      }
+
+      res.json(successResponse(seller, isApproved ? 'Seller approved' : 'Seller rejected'));
+    } else {
+      res.status(400).json(errorResponse('User does not have seller info'));
+    }
+  } else {
+    res.status(404).json(errorResponse('Seller not found'));
+  }
+});
+
+// @desc    Get admin dashboard stats
+// @route   GET /api/admin/dashboard
+// @access  Private/Admin
+export const getAdminStats = asyncHandler(async (req: Request, res: Response) => {
+  const totalUsers = await User.countDocuments();
+  const totalSellers = await User.countDocuments({ role: 'seller' });
+  const totalProducts = await Product.countDocuments();
+  const totalOrders = await Order.countDocuments();
+
+  const recentOrders = await Order.find({})
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .populate('user', 'name email');
+
+  const recentUsers = await User.find({})
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .select('name email role createdAt');
+
+  res.json(successResponse({
+    stats: {
+      totalUsers,
+      totalSellers,
+      totalProducts,
+      totalOrders
+    },
+    recentOrders,
+    recentUsers
+  }));
 });

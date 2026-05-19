@@ -26,6 +26,7 @@ export interface IOrder extends Document {
   tax: number;
   total: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  sellerOrdersStatus: Map<string, string>; // Mapping sellerId -> order status
   promoCode?: string;
   discountAmount: number;
   createdAt: Date;
@@ -52,6 +53,11 @@ const orderSchema = new Schema<IOrder>({
   tax:            Number,
   total:          Number,
   status:         { type: String, enum: ['pending','processing','shipped','delivered','cancelled'], default: 'pending' },
+  sellerOrdersStatus: {
+    type: Map,
+    of: String,
+    default: {}
+  },
   promoCode:      String,
   discountAmount: { type: Number, default: 0 }
 }, { timestamps: true });

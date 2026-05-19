@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import ParticleField from './ParticleField.js';
+import ParticleField from './ParticleField';
 
 const BackgroundEffect = () => {
   return (

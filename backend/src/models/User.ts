@@ -16,7 +16,20 @@ export interface IUser extends Document {
     country: string;
     isDefault: boolean;
   }[];
-  role: 'user' | 'seller' | 'admin';
+  role: 'buyer' | 'seller' | 'admin';
+  sellerInfo?: {
+    shopName: string;
+    shopDescription?: string;
+    shopLogo?: string;
+    banner?: string;
+    gstNumber?: string;
+    isApproved: boolean;
+    socialLinks?: {
+      website?: string;
+      instagram?: string;
+      twitter?: string;
+    };
+  };
   refreshToken?: string;
   createdAt: Date;
 }
@@ -37,7 +50,20 @@ const userSchema = new Schema<IUser>({
     country:    { type: String, default: 'PK' },
     isDefault:  { type: Boolean, default: false }
   }],
-  role:          { type: String, enum: ['user', 'seller', 'admin'], default: 'user' },
+  role:          { type: String, enum: ['buyer', 'seller', 'admin'], default: 'buyer' },
+  sellerInfo: {
+    shopName:        String,
+    shopDescription: String,
+    shopLogo:        String,
+    banner:          String,
+    gstNumber:       String,
+    isApproved:      { type: Boolean, default: false },
+    socialLinks: {
+      website:   String,
+      instagram: String,
+      twitter:   String
+    }
+  },
   refreshToken:  { type: String },
   createdAt:     { type: Date, default: Date.now }
 });

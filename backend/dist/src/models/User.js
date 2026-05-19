@@ -15,7 +15,20 @@ const userSchema = new Schema({
             country: { type: String, default: 'PK' },
             isDefault: { type: Boolean, default: false }
         }],
-    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    role: { type: String, enum: ['buyer', 'seller', 'admin'], default: 'buyer' },
+    sellerInfo: {
+        shopName: String,
+        shopDescription: String,
+        shopLogo: String,
+        banner: String,
+        gstNumber: String,
+        isApproved: { type: Boolean, default: false },
+        socialLinks: {
+            website: String,
+            instagram: String,
+            twitter: String
+        }
+    },
     refreshToken: { type: String },
     createdAt: { type: Date, default: Date.now }
 });

@@ -8,13 +8,15 @@ import {
   deleteProduct,
   getSellerProducts,
   updateProductModeration,
-  createProductReview
+  createProductReview,
+  getCategories
 } from '../controllers/product.controller.js';
 import { protect, seller, admin } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
 router.get('/', getProducts);
+router.get('/categories', getCategories);
 router.get('/featured', getFeaturedProducts);
 router.get('/seller', protect, seller, getSellerProducts);
 router.get('/:id', getProductById);

@@ -8,6 +8,7 @@ import {
   TrendingUp, Users, Box, DollarSign, Package, Clock, CheckCircle, AlertCircle 
 } from 'lucide-react';
 import { getSellerStats } from '../../api/seller.api';
+import { useAuthStore } from '../../store/authStore';
 import { LoadingSpinner } from '../../components/UIPolish';
 import { fadeUp, staggerContainer } from '../../lib/animations';
 
@@ -36,6 +37,7 @@ const StatCard = ({ title, value, icon: Icon, color, delay }: any) => (
 );
 
 const SellerDashboard = () => {
+  const { user } = useAuthStore();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +73,7 @@ const SellerDashboard = () => {
           <div>
             <h1 className="text-4xl font-bold mb-2">SELLER PORTAL</h1>
             <p className="text-white/40 font-mono text-sm uppercase tracking-widest">
-              Marketplace Control Center • Welcome back, Seller
+              {user?.sellerInfo?.shopName || 'Marketplace'} Control Center • Welcome back, {user?.name}
             </p>
           </div>
           <div className="flex gap-4">
@@ -83,6 +85,22 @@ const SellerDashboard = () => {
             </Link>
           </div>
         </div>
+
+        {!user?.sellerInfo?.isApproved && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-yellow-500/10 border border-yellow-500/20 p-6 rounded-2xl mb-10 flex items-center gap-6"
+          >
+            <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500">
+              <AlertCircle size={24} />
+            </div>
+            <div>
+              <h3 className="font-bold text-yellow-500 uppercase tracking-widest">Awaiting Authorization</h3>
+              <p className="text-sm text-white/60">Your merchant credentials are currently under review by the KALEIDO Overlords. Some features may be restricted until approval.</p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">

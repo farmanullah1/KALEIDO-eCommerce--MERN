@@ -3,6 +3,7 @@ const orderSchema = new Schema({
     user: { type: Schema.Types.ObjectId, ref: 'User' },
     items: [{
             product: { type: Schema.Types.ObjectId, ref: 'Product' },
+            sellerId: { type: Schema.Types.ObjectId, ref: 'User' },
             name: String,
             image: String,
             price: Number,
@@ -18,6 +19,11 @@ const orderSchema = new Schema({
     tax: Number,
     total: Number,
     status: { type: String, enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], default: 'pending' },
+    sellerOrdersStatus: {
+        type: Map,
+        of: String,
+        default: {}
+    },
     promoCode: String,
     discountAmount: { type: Number, default: 0 }
 }, { timestamps: true });

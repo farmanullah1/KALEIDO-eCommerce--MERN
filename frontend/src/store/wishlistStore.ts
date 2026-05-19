@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getWishlist, toggleWishlist } from '../api/wishlist.api.js';
+import { getWishlist, toggleWishlist } from '../api/wishlist.api';
 
 interface WishlistState {
   wishlist: any[];

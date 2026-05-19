@@ -4,7 +4,7 @@ import {
   Package, Search, Filter, ExternalLink, ChevronRight, 
   CheckCircle, Truck, Clock, AlertCircle, ShoppingBag, User
 } from 'lucide-react';
-import { getSellerOrders } from '../../api/orders.api';
+import { getSellerOrders, updateSellerOrderStatus } from '../../api/orders.api';
 import { LoadingSpinner } from '../../components/UIPolish';
 import { fadeUp, staggerContainer } from '../../lib/animations';
 import toast from 'react-hot-toast';
@@ -29,6 +29,19 @@ const SellerOrders = () => {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    try {
+      await updateSellerOrderStatus(id, status);
+      toast.success(`Order marked as ${status}`);
+      // Refresh local state
+      setOrders(orders.map(order => 
+        order._id === id ? { ...order, status } : order
+      ));
+    } catch (error) {
+      toast.error('Failed to update status');
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -121,9 +134,22 @@ const SellerOrders = () => {
                         <p className="text-2xl font-bold text-cyan">${order.sellerSubtotal.toFixed(2)}</p>
                       </div>
                       <div className="flex flex-col gap-2">
-                         <button className="btn-secondary px-6 py-2 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-                           <Truck size={14} /> Update Status
-                         </button>
+                         <div className="flex items-center gap-2">
+                           <select 
+                            value={order.status}
+                            onChange={(e) => handleUpdateStatus(order._id, e.target.value)}
+                            className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-primary/50"
+                           >
+                             <option value="pending">Pending</option>
+                             <option value="processing">Processing</option>
+                             <option value="shipped">Shipped</option>
+                             <option value="delivered">Delivered</option>
+                             <option value="cancelled">Cancelled</option>
+                           </select>
+                           <button className="p-2 glass-card text-white/20 hover:text-primary transition-colors">
+                            <ExternalLink size={14} />
+                           </button>
+                         </div>
                          <button className="text-[10px] font-bold text-white/20 hover:text-white transition-colors uppercase tracking-widest flex items-center justify-center gap-2">
                            View Details <ChevronRight size={12} />
                          </button>

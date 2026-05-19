@@ -8,6 +8,19 @@ interface User {
   role: string;
   anchorId: string;
   anchorCrystalColor: string;
+  sellerInfo?: {
+    shopName: string;
+    shopDescription: string;
+    shopLogo?: string;
+    banner?: string;
+    gstNumber?: string;
+    isApproved: boolean;
+    socialLinks?: {
+      website?: string;
+      instagram?: string;
+      twitter?: string;
+    };
+  };
 }
 
 interface AuthState {

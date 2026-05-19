@@ -10,6 +10,9 @@ const envSchema = z.object({
     JWT_REFRESH_EXPIRES: z.string().default('7d'),
     CLIENT_URL: z.string().default('http://localhost:5173'),
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+    CLOUDINARY_CLOUD_NAME: z.string().optional(),
+    CLOUDINARY_API_KEY: z.string().optional(),
+    CLOUDINARY_API_SECRET: z.string().optional(),
 });
 const envResult = envSchema.safeParse(process.env);
 if (!envResult.success) {

@@ -71,10 +71,13 @@ const AdminDashboard = () => {
               Global Platform Administration • Root Access
             </p>
           </div>
-          <div className="flex gap-4">
-            <button className="btn-secondary px-6 py-2 text-sm flex items-center gap-2">
+          <div className="flex gap-4 flex-wrap">
+            <Link to="/admin/users" className="btn-secondary px-6 py-2 text-sm flex items-center gap-2">
               <Users size={18} /> User Management
-            </button>
+            </Link>
+            <Link to="/admin/categories" className="btn-secondary px-6 py-2 text-sm flex items-center gap-2">
+              <Box size={18} /> Category Matrix
+            </Link>
             <Link to="/admin/moderation" className="btn-primary px-6 py-2 text-sm flex items-center gap-2 relative overflow-hidden group">
               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
               <ShieldCheck size={18} /> Moderation Queue

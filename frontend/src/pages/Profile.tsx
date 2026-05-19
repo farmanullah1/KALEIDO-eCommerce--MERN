@@ -1,13 +1,13 @@
 import { motion } from 'framer-motion';
-import { useAuthStore } from '../store/authStore.js';
-import { useWishlistStore } from '../store/wishlistStore.js';
+import { useAuthStore } from '../store/authStore';
+import { useWishlistStore } from '../store/wishlistStore';
 import { User, Package, Heart, Settings, Shield, LogOut, Activity, MapPin, Clock, Zap, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import api from '../api/axios.js';
-import { LoadingSpinner } from '../components/UIPolish.js';
-import { fadeUp, staggerContainer } from '../lib/animations.js';
-import SEO from '../components/SEO.js';
+import api from '../api/axios';
+import { LoadingSpinner } from '../components/UIPolish';
+import { fadeUp, staggerContainer } from '../lib/animations';
+import SEO from '../components/SEO';
 
 const Profile = () => {
   const { user, logout } = useAuthStore();
@@ -18,8 +18,8 @@ const Profile = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const { data } = await api.get('/orders');
-        setOrders(data.data);
+        const { data } = await api.get('/orders/mine');
+        setOrders(data.data || []);
       } catch (error) {
         console.error('Failed to fetch orders');
       } finally {
@@ -69,6 +69,26 @@ const Profile = () => {
                   <LogOut size={14} /> TERMINATE SESSION
                 </button>
               </div>
+
+              {user?.sellerInfo?.socialLinks && (
+                <div className="mt-6 flex justify-center gap-4 text-white/30">
+                  {user.sellerInfo.socialLinks.website && (
+                    <a href={user.sellerInfo.socialLinks.website} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                      <Zap size={16} />
+                    </a>
+                  )}
+                  {user.sellerInfo.socialLinks.instagram && (
+                    <a href={`https://instagram.com/${user.sellerInfo.socialLinks.instagram}`} target="_blank" rel="noopener noreferrer" className="hover:text-magenta transition-colors">
+                      <Activity size={16} />
+                    </a>
+                  )}
+                  {user.sellerInfo.socialLinks.twitter && (
+                    <a href={`https://twitter.com/${user.sellerInfo.socialLinks.twitter}`} target="_blank" rel="noopener noreferrer" className="hover:text-cyan transition-colors">
+                      <Clock size={16} />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="glass-card p-6">
@@ -162,6 +182,29 @@ const Profile = () => {
                 </div>
               )}
             </motion.div>
+
+            {user?.role === 'buyer' && (
+              <motion.div 
+                variants={fadeUp}
+                className="glass-card p-8 bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/20 relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32" />
+                <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+                  <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary border border-primary/30">
+                      <Zap size={32} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold uppercase tracking-widest italic">Open Your Emporium</h3>
+                      <p className="text-sm text-white/60 max-w-md">Monetize your digital artifacts and join the KALEIDO merchant network.</p>
+                    </div>
+                  </div>
+                  <Link to="/become-seller" className="btn-primary px-10 py-4 font-black tracking-[0.2em] shadow-[0_0_20px_rgba(0,255,255,0.2)]">
+                    BECOME MERCHANT
+                  </Link>
+                </div>
+              </motion.div>
+            )}
 
             {/* Quick Settings */}
             <motion.div variants={fadeUp} className="grid grid-cols-1 md:grid-cols-2 gap-8">

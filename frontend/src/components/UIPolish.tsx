@@ -1,39 +1,72 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { motion, useSpring, useMotionValue } from 'framer-motion';
 import { Heart } from 'lucide-react';
-import { useState } from 'react';
-import { useWishlistStore } from '../store/wishlistStore.js';
+import { useWishlistStore } from '../store/wishlistStore';
 
-export const LoadingSpinner = () => (
-  <div className="flex items-center justify-center">
+export const NeuralCursor = () => {
+  const cursorX = useMotionValue(-100);
+  const cursorY = useMotionValue(-100);
+  
+  const springConfig = { damping: 25, stiffness: 700 };
+  const x = useSpring(cursorX, springConfig);
+  const y = useSpring(cursorY, springConfig);
+
+  useEffect(() => {
+    const moveCursor = (e: MouseEvent) => {
+      cursorX.set(e.clientX - 16);
+      cursorY.set(e.clientY - 16);
+    };
+
+    window.addEventListener('mousemove', moveCursor);
+    return () => window.removeEventListener('mousemove', moveCursor);
+  }, [cursorX, cursorY]);
+
+  return (
     <motion.div
-      animate={{ rotate: 360 }}
-      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-      className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full"
-    />
-  </div>
-);
+      style={{
+        translateX: x,
+        translateY: y,
+      }}
+      className="fixed top-0 left-0 w-8 h-8 rounded-full border border-primary/50 pointer-events-none z-[9999] flex items-center justify-center mix-blend-difference"
+    >
+      <div className="w-1 h-1 bg-primary rounded-full shadow-[0_0_10px_#00ffff]" />
+    </motion.div>
+  );
+};
+
+export const GridDistortion = () => {
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[1] opacity-[0.03]">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div className="absolute inset-0 bg-radial-gradient from-transparent to-background" />
+    </div>
+  );
+};
+
+export const ScanlineEffect = () => {
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[9998] opacity-[0.02] overflow-hidden">
+      <div className="w-full h-[2px] bg-white animate-scanline" />
+    </div>
+  );
+};
+
+export const LoadingSpinner = ({ size = 'medium' }: { size?: 'small' | 'medium' | 'large' }) => {
+  const sizes = {
+    small: 'w-5 h-5 border-2',
+    medium: 'w-10 h-10 border-3',
+    large: 'w-16 h-16 border-4'
+  };
+
+  return (
+    <div className="flex items-center justify-center">
+      <div className={`${sizes[size]} border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(0,245,255,0.3)]`} />
+    </div>
+  );
+};
 
 export const Skeleton = ({ className }: { className?: string }) => (
   <div className={`bg-white/5 animate-pulse rounded-xl ${className}`} />
-);
-
-export const Checkmark = () => (
-  <motion.svg
-    width="80"
-    height="80"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="3"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="text-primary"
-    initial={{ pathLength: 0 }}
-    animate={{ pathLength: 1 }}
-    transition={{ duration: 0.5, ease: "easeInOut" }}
-  >
-    <motion.polyline points="20 6 9 17 4 12" />
-  </motion.svg>
 );
 
 export const WishlistButton = ({ productId, className }: { productId: string, className?: string }) => {
@@ -87,3 +120,60 @@ export const WishlistButton = ({ productId, className }: { productId: string, cl
     </div>
   );
 };
+
+export const Checkmark = () => (
+  <motion.svg
+    className="w-12 h-12 text-primary"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={3}
+    initial={{ strokeDasharray: 100, strokeDashoffset: 100 }}
+    animate={{ strokeDashoffset: 0 }}
+    transition={{ duration: 0.6, ease: "easeOut" }}
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+  </motion.svg>
+);
+
+export const Confetti = () => {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {[...Array(50)].map((_, i) => (
+        <motion.div
+          key={i}
+          className={`absolute w-2 h-2 rounded-full ${i % 2 === 0 ? 'bg-primary' : 'bg-secondary'}`}
+          initial={{ 
+            top: '50%', 
+            left: '50%',
+            opacity: 1,
+            scale: 1
+          }}
+          animate={{ 
+            top: `${Math.random() * 100}%`,
+            left: `${Math.random() * 100}%`,
+            opacity: 0,
+            scale: 0
+          }}
+          transition={{ 
+            duration: Math.random() * 2 + 1,
+            ease: "easeOut",
+            delay: Math.random() * 0.5
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const UIPolish = () => {
+  return (
+    <>
+      <NeuralCursor />
+      <GridDistortion />
+      <ScanlineEffect />
+    </>
+  );
+};
+
+export default UIPolish;

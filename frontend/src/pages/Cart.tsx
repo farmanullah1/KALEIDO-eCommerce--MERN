@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck } from 'lucide-react';
-import { useCartStore } from '../store/cartStore.js';
-import { LoadingSpinner } from '../components/UIPolish.js';
+import { useCartStore } from '../store/cartStore';
+import { LoadingSpinner } from '../components/UIPolish';
 
 const CartItem = ({ item, onUpdate, onRemove }: { item: any, onUpdate: any, onRemove: any }) => {
   const [isShaking, setIsShaking] = useState(false);
